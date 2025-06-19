@@ -1,0 +1,24 @@
+body {
+  margin: 0;
+  font-family: sans-serif;
+}
+
+.navbar {
+  background-color: #000000;
+  padding: 1rem 0;
+  text-align: center;
+}
+
+.menu-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: inline-flex;
+  gap: 2rem; /* space between buttons */
+}
+
+.menu-list li a {
+  text-decoration: none;
+  color: #ffffff;
+  font-weight: bold;
+}

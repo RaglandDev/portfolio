@@ -1,7 +1,17 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>This is the title of the webpage!</title>
+    <title>Home</title>
+    <link rel="stylesheet" href="styles.css" />
+    <!-- import map goes after any styles -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@v0.177.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@v0.177.0/examples/jsm/"
+        }
+      }
+    </script>
   </head>
 
   <nav class="navbar">
@@ -13,5 +23,6 @@
 
   <body>
     <p>This is the home page.</p>
+    <script type="module" src="/main.js"></script>
   </body>
 </html>
