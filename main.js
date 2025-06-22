@@ -1,6 +1,6 @@
-import { setupScene } from "./setupScene.js";
+import { setupScene } from "./util/setupScene.js";
 import { setupInteractions } from "./interactions.js";
-import { updateMatrixCubes } from "./updateMatrixCubes.js";
+import { updateMatrixCubes } from "./util/updateMatrixCubes.js";
 
 // === Constants ===
 const CONFIG = {

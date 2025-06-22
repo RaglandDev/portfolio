@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { Matrix3D } from "./Matrix3D.js";
+import { Matrix3D } from "../components/Matrix3D.js";
 
 export function setupScene(config) {
   const {
