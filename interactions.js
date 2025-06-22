@@ -20,6 +20,7 @@ export function setupInteractions(state, camera, matricesGroup, renderer) {
     raycaster.setFromCamera(mouse, camera);
     state.hoveredMatrix = null;
 
+    // hovering on 3d matrix
     for (const matrix of matricesGroup.children) {
       const target = matrix.userData.raycastTarget;
       if (target && raycaster.intersectObject(target, false).length > 0) {
@@ -28,6 +29,7 @@ export function setupInteractions(state, camera, matricesGroup, renderer) {
       }
     }
 
+    // spinning 3x3 grid
     if (state.isDragging) {
       const deltaX = event.clientX - state.previousMousePosition.x;
       const deltaY = event.clientY - state.previousMousePosition.y;

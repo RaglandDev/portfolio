@@ -53,6 +53,10 @@ export function setupScene(config) {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+
+    // un-rotate grid for mobile
+    const shouldUnrotate = window.innerWidth < 600;
+    matricesGroup.targetRotationZ = shouldUnrotate ? 0 : -Math.PI / 4;
   });
 
   window.dispatchEvent(new Event("resize")); // initial call

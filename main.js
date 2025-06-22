@@ -15,6 +15,7 @@ const CONFIG = {
   FAR: 1000,
   CAMERA_Z: 50,
   VIEW_HEIGHT: 65,
+  ROTATION_BREAKPOINT: 600, // px
 };
 
 // === Shared State ===
@@ -25,17 +26,37 @@ const state = {
   velocityY: 0,
   idle: false,
   hoveredMatrix: null,
+  rotated: true, // start in rotated (45°) orientation
 };
 
 // === Setup ===
 const { scene, camera, renderer, matricesGroup } = setupScene(CONFIG);
 setupInteractions(state, camera, matricesGroup, renderer);
 
+// === Rotation logic ===
+function updateMatrixRotation() {
+  const shouldBeUnrotated = window.innerWidth < CONFIG.ROTATION_BREAKPOINT;
+
+  if (shouldBeUnrotated && state.rotated) {
+    matricesGroup.userData.targetRotationZ = 0;
+    state.rotated = false;
+  } else if (!shouldBeUnrotated && !state.rotated) {
+    matricesGroup.userData.targetRotationZ = -Math.PI / 4;
+    state.rotated = true;
+  }
+}
+window.addEventListener("resize", updateMatrixRotation);
+updateMatrixRotation(); // run once on startup
+
 // === Animation Loop ===
 function animate() {
   applyInertia(state, matricesGroup);
 
-  // return to original orientation
+  // Smooth Z rotation animation
+  const targetZ = matricesGroup.userData.targetRotationZ ?? -Math.PI / 4;
+  matricesGroup.rotation.z += (targetZ - matricesGroup.rotation.z) * 0.1;
+
+  // Return to upright orientation on X/Y
   matricesGroup.rotation.x += (0 - matricesGroup.rotation.x) * 0.02;
   matricesGroup.rotation.y += (0 - matricesGroup.rotation.y) * 0.02;
 
