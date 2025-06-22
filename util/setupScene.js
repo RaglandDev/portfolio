@@ -13,7 +13,7 @@ export function setupScene(config) {
     CUBE_COLOR,
     CUBE_EDGE_WIDTH,
     MATRIX_SPACING,
-    VIEW_HEIGHT,
+    MOBILE_BREAKPOINT,
   } = config;
 
   const scene = new THREE.Scene();
@@ -48,15 +48,21 @@ export function setupScene(config) {
   scene.add(matricesGroup);
 
   window.addEventListener("resize", () => {
-    const fovRadians = 2 * Math.atan(VIEW_HEIGHT / 2 / CAMERA_Z);
-    camera.fov = THREE.MathUtils.radToDeg(fovRadians);
+    const isMobile = window.innerWidth < MOBILE_BREAKPOINT;
+
+    matricesGroup.targetRotationZ = isMobile ? 0 : -Math.PI / 4;
+
+    if (isMobile) {
+      camera.position.z = CAMERA_Z * 1.3;
+      camera.fov = FOV;
+    } else {
+      camera.position.z = CAMERA_Z;
+      camera.fov = FOV;
+    }
+
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
-
-    // un-rotate grid for mobile
-    const shouldUnrotate = window.innerWidth < 600;
-    matricesGroup.targetRotationZ = shouldUnrotate ? 0 : -Math.PI / 4;
   });
 
   window.dispatchEvent(new Event("resize")); // initial call

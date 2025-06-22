@@ -1,6 +1,12 @@
 import * as THREE from "three";
 
-export function setupInteractions(state, camera, matricesGroup, renderer) {
+export function setupInteractions(
+  state,
+  camera,
+  matricesGroup,
+  renderer,
+  onHoverChange
+) {
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
 
@@ -18,9 +24,10 @@ export function setupInteractions(state, camera, matricesGroup, renderer) {
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
     raycaster.setFromCamera(mouse, camera);
+
+    const prevHovered = state.hoveredMatrix;
     state.hoveredMatrix = null;
 
-    // hovering on 3d matrix
     for (const matrix of matricesGroup.children) {
       const target = matrix.userData.raycastTarget;
       if (target && raycaster.intersectObject(target, false).length > 0) {
@@ -29,7 +36,10 @@ export function setupInteractions(state, camera, matricesGroup, renderer) {
       }
     }
 
-    // spinning 3x3 grid
+    if (onHoverChange && prevHovered !== state.hoveredMatrix) {
+      onHoverChange(state.hoveredMatrix);
+    }
+
     if (state.isDragging) {
       const deltaX = event.clientX - state.previousMousePosition.x;
       const deltaY = event.clientY - state.previousMousePosition.y;

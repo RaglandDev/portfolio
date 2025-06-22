@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import { setupScene } from "./util/setupScene.js";
 import { setupInteractions } from "./interactions.js";
 import { updateMatrixCubes } from "./util/updateMatrixCubes.js";
@@ -14,8 +15,10 @@ const CONFIG = {
   NEAR: 0.1,
   FAR: 1000,
   CAMERA_Z: 50,
-  VIEW_HEIGHT: 65,
-  ROTATION_BREAKPOINT: 600, // px
+  MOBILE_BREAKPOINT: 600, // px
+  CENTER_SCALE_MOBILE: 7,
+  CENTER_SCALE_NORMAL: 1,
+  SCALE_LERP_SPEED: 0.1,
 };
 
 // === Shared State ===
@@ -26,16 +29,21 @@ const state = {
   velocityY: 0,
   idle: false,
   hoveredMatrix: null,
-  rotated: true, // start in rotated (45°) orientation
+  rotated: true, // start rotated 45°
 };
 
 // === Setup ===
 const { scene, camera, renderer, matricesGroup } = setupScene(CONFIG);
-setupInteractions(state, camera, matricesGroup, renderer);
+setupInteractions(state, camera, matricesGroup, renderer, (hoveredMatrix) => {
+  // On mobile, clear hoveredMatrix to prevent scaling/rotation issues
+  if (window.innerWidth < CONFIG.MOBILE_BREAKPOINT) {
+    state.hoveredMatrix = null;
+  }
+});
 
 // === Rotation logic ===
 function updateMatrixRotation() {
-  const shouldBeUnrotated = window.innerWidth < CONFIG.ROTATION_BREAKPOINT;
+  const shouldBeUnrotated = window.innerWidth < CONFIG.MOBILE_BREAKPOINT;
 
   if (shouldBeUnrotated && state.rotated) {
     matricesGroup.userData.targetRotationZ = 0;
@@ -50,6 +58,7 @@ updateMatrixRotation(); // run once on startup
 
 // === Animation Loop ===
 function animate() {
+  const isMobile = window.innerWidth < CONFIG.MOBILE_BREAKPOINT;
   applyInertia(state, matricesGroup);
 
   // Smooth Z rotation animation
@@ -60,10 +69,50 @@ function animate() {
   matricesGroup.rotation.x += (0 - matricesGroup.rotation.x) * 0.02;
   matricesGroup.rotation.y += (0 - matricesGroup.rotation.y) * 0.02;
 
-  updateMatrixCubes(state, matricesGroup, camera);
+  updateMatrixCubes(state, matricesGroup, camera, isMobile);
+
+  // Scale center red cube up on mobile, else scale back to normal
+  const CENTER_SCALE_MOBILE = 3;
+  const CENTER_SCALE_NORMAL = 1;
+  const SCALE_LERP_SPEED = 0.1;
+
+  matricesGroup.children.forEach((matrix) => {
+    matrix.children.forEach((cubeGroup) => {
+      if (!cubeGroup.userData.isCenter) return;
+
+      const mesh = cubeGroup.children.find(
+        (child) => child instanceof THREE.Mesh
+      );
+      if (!mesh) return;
+
+      const isRedCube = mesh.material.color.equals(new THREE.Color("red"));
+
+      if (isMobile && isRedCube) {
+        cubeGroup.scale.lerp(
+          new THREE.Vector3(
+            CONFIG.CENTER_SCALE_MOBILE,
+            CONFIG.CENTER_SCALE_MOBILE,
+            CONFIG.CENTER_SCALE_MOBILE
+          ),
+          CONFIG.SCALE_LERP_SPEED
+        );
+      } else {
+        cubeGroup.scale.lerp(
+          new THREE.Vector3(
+            CONFIG.CENTER_SCALE_NORMAL,
+            CONFIG.CENTER_SCALE_NORMAL,
+            CONFIG.CENTER_SCALE_NORMAL
+          ),
+          CONFIG.SCALE_LERP_SPEED
+        );
+      }
+    });
+  });
+
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }
+
 animate();
 
 function applyInertia(state, group) {
