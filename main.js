@@ -1,104 +1,122 @@
 import * as THREE from 'three';
+import { Matrix3D } from './Matrix3D.js';
 
-let zoomedIn = false;
-let targetZoom = 5;
-let currentZoom = 5;
+const BACKGROUND_COLOR = 'white';
 
-window.addEventListener('mousedown', () => {
-  zoomedIn = !zoomedIn;
-  targetZoom = zoomedIn ? 0.1 : 5;
-});
-
+let isDragging = false;
+let previousMousePosition = { x: 0, y: 0 };
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(
+  75,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  1000
+);
 
-const renderer = new THREE.WebGLRenderer();
+const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(BACKGROUND_COLOR, 1);
 document.body.appendChild(renderer.domElement);
 
-const group = new THREE.Group();
-scene.add(group);
+const gridGroup = Matrix3D(3, 3, 3, 3, 'black', 'white', 3);
+scene.add(gridGroup);
 
-// create a cube geometry (size 2x2x2)
-const geometry = new THREE.BoxGeometry(2, 2, 2);
-const material = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.0 });
-const cube = new THREE.Mesh(geometry, material);
-group.add(cube);
+camera.position.z = 20;
 
-// edges from cube geometry
-const edges = new THREE.EdgesGeometry(geometry);
-const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000 }));
-group.add(line);
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
 
-// --- Use bounding box to get precise corner positions ---
-// create bounding box from geometry
-const boundingBox = new THREE.Box3().setFromBufferAttribute(geometry.attributes.position);
+let isHoveringCenter = false;
 
-// extract min and max corners
-const min = boundingBox.min;
-const max = boundingBox.max;
+window.addEventListener('mousemove', (event) => {
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-// corners of the box (8 vertices)
-const corners = [
-  new THREE.Vector3(min.x, min.y, min.z),
-  new THREE.Vector3(min.x, min.y, max.z),
-  new THREE.Vector3(min.x, max.y, min.z),
-  new THREE.Vector3(min.x, max.y, max.z),
-  new THREE.Vector3(max.x, min.y, min.z),
-  new THREE.Vector3(max.x, min.y, max.z),
-  new THREE.Vector3(max.x, max.y, min.z),
-  new THREE.Vector3(max.x, max.y, max.z),
-];
+  raycaster.setFromCamera(mouse, camera);
 
-// boxes at edge midpoints
-const edgeBoxMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
-const baseBox = new THREE.BoxGeometry(1, 0.1, 0.1);
-const edgePositions = edges.attributes.position;
-
-for (let i = 0; i < edgePositions.count; i += 2) {
-  const start = new THREE.Vector3().fromBufferAttribute(edgePositions, i);
-  const end = new THREE.Vector3().fromBufferAttribute(edgePositions, i + 1);
-  const midpoint = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
-
-  const dir = new THREE.Vector3().subVectors(end, start).normalize();
-  const length = start.distanceTo(end);
-
-  // create edge prism
-  const box = new THREE.Mesh(baseBox, edgeBoxMaterial);
-  box.scale.set(length, 0.9, 0.9); // stretch along X
-  box.position.copy(midpoint);
-
-  // rotation
-  const xAxis = new THREE.Vector3(1, 0, 0);
-  const quaternion = new THREE.Quaternion().setFromUnitVectors(xAxis, dir);
-  box.setRotationFromQuaternion(quaternion);
-
-  group.add(box);
-}
-
-// small corner boxes at each bounding box corner (flush with edges)
-const cornerBoxMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
-const cornerBoxGeometry = new THREE.BoxGeometry(0.09, 0.09, 0.09);
-
-corners.forEach(cornerPos => {
-  const cornerBox = new THREE.Mesh(cornerBoxGeometry, cornerBoxMaterial);
-  cornerBox.position.copy(cornerPos);
-  group.add(cornerBox);
+  const raycastTarget = gridGroup.userData.raycastTarget;
+  if (raycastTarget) {
+    const intersects = raycaster.intersectObject(raycastTarget, false);
+    isHoveringCenter = intersects.length > 0;
+    if (isHoveringCenter) {
+      console.log('center')
+    }
+  } else {
+    isHoveringCenter = false;
+  }
 });
 
-// move camera outside cube
-camera.position.z = 5;
+window.addEventListener('mousedown', (event) => {
+  isDragging = true;
+  previousMousePosition = { x: event.clientX, y: event.clientY };
+});
 
-// render loop
+window.addEventListener('mouseup', () => {
+  isDragging = false;
+});
+
+window.addEventListener('mousemove', (event) => {
+  if (!isDragging) return;
+
+  const deltaMove = {
+    x: event.clientX - previousMousePosition.x,
+    y: event.clientY - previousMousePosition.y,
+  };
+
+  const deltaRotationQuaternion = new THREE.Quaternion().setFromEuler(
+    new THREE.Euler(
+      toRadians(deltaMove.y * 0.5),
+      toRadians(deltaMove.x * 0.5),
+      0,
+      'XYZ'
+    )
+  );
+
+  gridGroup.quaternion.multiplyQuaternions(
+    deltaRotationQuaternion,
+    gridGroup.quaternion
+  );
+
+  previousMousePosition = { x: event.clientX, y: event.clientY };
+});
+
+function toRadians(angle) {
+  return angle * (Math.PI / 180);
+}
+
 function animate() {
-  group.rotation.x += 0.0075;
-  group.rotation.y += 0.0075;
+  gridGroup.children.forEach((cube) => {
+    if (!cube.userData.originalPosition) return;
 
-  // smooth zoom interpolation
-  currentZoom += (targetZoom - currentZoom) * 0.1;
-  camera.position.z = currentZoom;
+    const targetPos = cube.userData.originalPosition.clone();
+
+    if (isHoveringCenter) {
+      targetPos.add(cube.userData.explodeDirection.clone().multiplyScalar(3));
+    }
+
+    cube.position.lerp(targetPos, 0.25);
+
+    if (cube.userData.rotationSpeed) {
+      cube.rotation.x += cube.userData.rotationSpeed.x;
+      cube.rotation.y += cube.userData.rotationSpeed.y;
+    }
+
+    if (cube.userData.lineMaterial) {
+      cube.userData.lineMaterial.resolution.set(
+        window.innerWidth,
+        window.innerHeight
+      );
+    }
+  });
 
   renderer.render(scene, camera);
 }
+
 renderer.setAnimationLoop(animate);
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
