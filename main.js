@@ -11,6 +11,8 @@ let velocityY = 0; // rotation velocity around Y (left/right)
 const friction = 0.98;
 const throwThreshold = 0.07;
 
+let idle = false;
+
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
   75,
@@ -25,7 +27,6 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(BACKGROUND_COLOR, 1);
 document.body.appendChild(renderer.domElement);
 
-// Matrix Grid
 const matricesGroup = new THREE.Group();
 matricesGroup.rotation.z = -Math.PI / 4;
 
@@ -44,6 +45,15 @@ const mouse = new THREE.Vector2();
 let hoveredMatrix = null;
 
 window.addEventListener('mousemove', (event) => {
+  // When user moves inside canvas, consider active
+  idle = false;
+
+  matricesGroup.children.forEach((matrix) => {
+    matrix.children.forEach((cube) => {
+      delete cube.userData.idleVelocity;
+    });
+  });
+
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
@@ -94,8 +104,23 @@ window.addEventListener('mousemove', (event) => {
   previousMousePosition = { x: event.clientX, y: event.clientY };
 });
 
+window.addEventListener('mouseout', (event) => {
+  if (!event.relatedTarget) {
+    idle = true;
+  }
+});
+renderer.domElement.addEventListener('mouseenter', () => {
+  idle = false;
+  // Reset idle velocities so cubes return to original positions
+  matricesGroup.children.forEach(matrix => {
+    matrix.children.forEach(cube => {
+      delete cube.userData.idleVelocity;
+    });
+  });
+});
+
 function animate() {
-  if (!isDragging) {
+  if (!isDragging && !idle) {
     if (Math.abs(velocityX) > 0.0001) {
       matricesGroup.rotation.x += velocityX;
       velocityX *= friction;
@@ -118,38 +143,56 @@ function animate() {
     matrix.children.forEach((cube) => {
       if (!cube.userData.originalPosition) return;
 
-      const targetPos = cube.userData.originalPosition.clone();
+      let targetPos = cube.userData.originalPosition.clone();
 
-      if (Math.abs(velocityX) > throwThreshold || Math.abs(velocityY) > throwThreshold) {
-        const strength = Math.min(
-          Math.max(Math.abs(velocityX), Math.abs(velocityY)) * 100,
-          100
-        );
-        targetPos.add(cube.userData.explodeDirection.clone().multiplyScalar(strength));
-      }
+      if (!idle) {
+        if (Math.abs(velocityX) > throwThreshold || Math.abs(velocityY) > throwThreshold) {
+          const strength = Math.min(
+            Math.max(Math.abs(velocityX), Math.abs(velocityY)) * 100,
+            100
+          );
+          targetPos.add(cube.userData.explodeDirection.clone().multiplyScalar(strength));
+        }
 
-      if (matrix === hoveredMatrix) {
-        targetPos.add(cube.userData.explodeDirection.clone().multiplyScalar(3));
+        if (matrix === hoveredMatrix) {
+          targetPos.add(cube.userData.explodeDirection.clone().multiplyScalar(3));
 
-        if (cube.userData.isCenter) {
-          cube.scale.lerp(new THREE.Vector3(3, 3, 3), 0.1);
+          if (cube.userData.isCenter) {
+            cube.scale.lerp(new THREE.Vector3(3, 3, 3), 0.1);
 
-          // Smooth face camera
-          const tempObj = new THREE.Object3D();
-          tempObj.position.copy(cube.position);
-          tempObj.lookAt(camera.position);
-          const targetQuat = tempObj.quaternion;
-          cube.quaternion.slerp(targetQuat, 0.1);
+            const tempObj = new THREE.Object3D();
+            tempObj.position.copy(cube.position);
+            tempObj.lookAt(camera.position);
+            cube.quaternion.slerp(tempObj.quaternion, 0.1);
+          }
+        } else {
+          if (cube.userData.isCenter) {
+            cube.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
+          }
         }
       } else {
-        if (cube.userData.isCenter) {
-          cube.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
+        if (!cube.userData.idleVelocity) {
+          cube.userData.idleVelocity = new THREE.Vector3(
+            (Math.random() - 0.5) * 40,
+            (Math.random() - 0.5) * 40,
+            (Math.random() - 0.5) * 40
+          );
+        }
+
+        cube.position.add(cube.userData.idleVelocity);
+
+        if (cube.userData.rotationSpeed) {
+          cube.rotation.x += cube.userData.rotationSpeed.x;
+          cube.rotation.y += cube.userData.rotationSpeed.y;
+        } else {
+          cube.rotation.x += 0.05;
+          cube.rotation.y += 0.05;
         }
       }
 
       cube.position.lerp(targetPos, 0.07);
 
-      if (cube.userData.rotationSpeed) {
+      if (cube.userData.rotationSpeed && !idle) {
         cube.rotation.x += cube.userData.rotationSpeed.x;
         cube.rotation.y += cube.userData.rotationSpeed.y;
       }
@@ -171,3 +214,5 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
+
+
