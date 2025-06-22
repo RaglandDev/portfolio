@@ -1,3 +1,4 @@
+// main.js
 import * as THREE from 'three';
 import { Matrix3D } from './Matrix3D.js';
 
@@ -19,15 +20,32 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(BACKGROUND_COLOR, 1);
 document.body.appendChild(renderer.domElement);
 
-const gridGroup = Matrix3D(3, 3, 3, 3, 'black', 'white', 3);
-scene.add(gridGroup);
+// Create 3x3 grid of Matrix3D
+const matrixSpacing = 15;
+const matricesGroup = new THREE.Group();
+matricesGroup.rotation.z = -Math.PI / 4; // rotate left 45 degrees
 
-camera.position.z = 20;
+for (let i = 0; i < 3; i++) {
+  for (let j = 0; j < 3; j++) {
+    const matrix = Matrix3D(4, 'black', 'white', 2);
+    matrix.position.set(
+      (i - 1) * matrixSpacing,
+      (j - 1) * matrixSpacing,
+      0
+    );
+    matricesGroup.add(matrix);
+  }
+}
+
+scene.add(matricesGroup);
+
+camera.position.z = 50;
+camera.position.y = -5;
 
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
-let isHoveringCenter = false;
+let hoveredMatrix = null;
 
 window.addEventListener('mousemove', (event) => {
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -35,15 +53,18 @@ window.addEventListener('mousemove', (event) => {
 
   raycaster.setFromCamera(mouse, camera);
 
-  const raycastTarget = gridGroup.userData.raycastTarget;
-  if (raycastTarget) {
-    const intersects = raycaster.intersectObject(raycastTarget, false);
-    isHoveringCenter = intersects.length > 0;
-    if (isHoveringCenter) {
-      console.log('center')
+  hoveredMatrix = null; // reset
+
+  // Check hover for each matrix's raycast target
+  for (const matrix of matricesGroup.children) {
+    const target = matrix.userData.raycastTarget;
+    if (target) {
+      const intersects = raycaster.intersectObject(target, false);
+      if (intersects.length > 0) {
+        hoveredMatrix = matrix;
+        break;
+      }
     }
-  } else {
-    isHoveringCenter = false;
   }
 });
 
@@ -64,19 +85,9 @@ window.addEventListener('mousemove', (event) => {
     y: event.clientY - previousMousePosition.y,
   };
 
-  const deltaRotationQuaternion = new THREE.Quaternion().setFromEuler(
-    new THREE.Euler(
-      toRadians(deltaMove.y * 0.5),
-      toRadians(deltaMove.x * 0.5),
-      0,
-      'XYZ'
-    )
-  );
-
-  gridGroup.quaternion.multiplyQuaternions(
-    deltaRotationQuaternion,
-    gridGroup.quaternion
-  );
+  // Rotate ONLY around Y-axis for left-right drag
+  const rotationSpeed = 0.01;
+  matricesGroup.rotation.y += deltaMove.x * rotationSpeed;
 
   previousMousePosition = { x: event.clientX, y: event.clientY };
 });
@@ -86,28 +97,26 @@ function toRadians(angle) {
 }
 
 function animate() {
-  gridGroup.children.forEach((cube) => {
-    if (!cube.userData.originalPosition) return;
+  matricesGroup.children.forEach((matrix) => {
+    matrix.children.forEach((cube) => {
+      if (!cube.userData.originalPosition) return;
 
-    const targetPos = cube.userData.originalPosition.clone();
+      const targetPos = cube.userData.originalPosition.clone();
+      if (matrix === hoveredMatrix) {
+        targetPos.add(cube.userData.explodeDirection.clone().multiplyScalar(3));
+      }
 
-    if (isHoveringCenter) {
-      targetPos.add(cube.userData.explodeDirection.clone().multiplyScalar(3));
-    }
+      cube.position.lerp(targetPos, 0.25);
 
-    cube.position.lerp(targetPos, 0.25);
+      if (cube.userData.rotationSpeed) {
+        cube.rotation.x += cube.userData.rotationSpeed.x;
+        cube.rotation.y += cube.userData.rotationSpeed.y;
+      }
 
-    if (cube.userData.rotationSpeed) {
-      cube.rotation.x += cube.userData.rotationSpeed.x;
-      cube.rotation.y += cube.userData.rotationSpeed.y;
-    }
-
-    if (cube.userData.lineMaterial) {
-      cube.userData.lineMaterial.resolution.set(
-        window.innerWidth,
-        window.innerHeight
-      );
-    }
+      if (cube.userData.lineMaterial) {
+        cube.userData.lineMaterial.resolution.set(window.innerWidth, window.innerHeight);
+      }
+    });
   });
 
   renderer.render(scene, camera);
