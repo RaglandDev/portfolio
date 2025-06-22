@@ -19,6 +19,10 @@ export function Matrix3D(spacing = 4, edgeColor = 'black', boxColor = 'white', e
 
         const isCenter = x === centerIndex && y === centerIndex && z === centerIndex;
         const cubeCurrentColor = isCenter ? 'red' : boxColor;
+        
+        if (x === centerIndex && y === centerIndex && z === 2) {
+            continue;
+        }
 
         const cube = Box(cubeCurrentColor, edgeColor, edgeWidth);
         cube.position.set(posX, posY, posZ);

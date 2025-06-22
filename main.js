@@ -6,6 +6,10 @@ const BACKGROUND_COLOR = 'white';
 
 let isDragging = false;
 let previousMousePosition = { x: 0, y: 0 };
+let velocityX = 0; // rotation velocity around X (forward/back)
+let velocityY = 0; // rotation velocity around Y (left/right)
+const friction = 0.98;
+const throwThreshold = 0.07;
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
@@ -14,37 +18,29 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   1000
 );
+camera.position.z = 50;
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(BACKGROUND_COLOR, 1);
 document.body.appendChild(renderer.domElement);
 
-// Create 3x3 grid of Matrix3D
-const matrixSpacing = 15;
+// Matrix Grid
 const matricesGroup = new THREE.Group();
-matricesGroup.rotation.z = -Math.PI / 4; // rotate left 45 degrees
+matricesGroup.rotation.z = -Math.PI / 4;
 
+const matrixSpacing = 15;
 for (let i = 0; i < 3; i++) {
   for (let j = 0; j < 3; j++) {
     const matrix = Matrix3D(4, 'black', 'white', 2);
-    matrix.position.set(
-      (i - 1) * matrixSpacing,
-      (j - 1) * matrixSpacing,
-      0
-    );
+    matrix.position.set((i - 1) * matrixSpacing, (j - 1) * matrixSpacing, 0);
     matricesGroup.add(matrix);
   }
 }
-
 scene.add(matricesGroup);
-
-camera.position.z = 50;
-camera.position.y = -5;
 
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
-
 let hoveredMatrix = null;
 
 window.addEventListener('mousemove', (event) => {
@@ -52,10 +48,8 @@ window.addEventListener('mousemove', (event) => {
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
   raycaster.setFromCamera(mouse, camera);
+  hoveredMatrix = null;
 
-  hoveredMatrix = null; // reset
-
-  // Check hover for each matrix's raycast target
   for (const matrix of matricesGroup.children) {
     const target = matrix.userData.raycastTarget;
     if (target) {
@@ -71,6 +65,8 @@ window.addEventListener('mousemove', (event) => {
 window.addEventListener('mousedown', (event) => {
   isDragging = true;
   previousMousePosition = { x: event.clientX, y: event.clientY };
+  velocityX = 0;
+  velocityY = 0;
 });
 
 window.addEventListener('mouseup', () => {
@@ -80,33 +76,78 @@ window.addEventListener('mouseup', () => {
 window.addEventListener('mousemove', (event) => {
   if (!isDragging) return;
 
-  const deltaMove = {
-    x: event.clientX - previousMousePosition.x,
-    y: event.clientY - previousMousePosition.y,
-  };
+  const deltaX = event.clientX - previousMousePosition.x;
+  const deltaY = event.clientY - previousMousePosition.y;
 
-  // Rotate ONLY around Y-axis for left-right drag
-  const rotationSpeed = 0.01;
-  matricesGroup.rotation.y += deltaMove.x * rotationSpeed;
+  if (Math.abs(deltaX) > Math.abs(deltaY)) {
+    const rotationAmountY = deltaX * 0.005;
+    matricesGroup.rotation.y += rotationAmountY;
+    velocityY = rotationAmountY;
+    velocityX = 0;
+  } else {
+    const rotationAmountX = deltaY * 0.005;
+    matricesGroup.rotation.x += rotationAmountX;
+    velocityX = rotationAmountX;
+    velocityY = 0;
+  }
 
   previousMousePosition = { x: event.clientX, y: event.clientY };
 });
 
-function toRadians(angle) {
-  return angle * (Math.PI / 180);
-}
-
 function animate() {
+  if (!isDragging) {
+    if (Math.abs(velocityX) > 0.0001) {
+      matricesGroup.rotation.x += velocityX;
+      velocityX *= friction;
+    } else {
+      velocityX = 0;
+    }
+
+    if (Math.abs(velocityY) > 0.0001) {
+      matricesGroup.rotation.y += velocityY;
+      velocityY *= friction;
+    } else {
+      velocityY = 0;
+    }
+
+    matricesGroup.rotation.x += (0 - matricesGroup.rotation.x) * 0.02;
+    matricesGroup.rotation.y += (0 - matricesGroup.rotation.y) * 0.02;
+  }
+
   matricesGroup.children.forEach((matrix) => {
     matrix.children.forEach((cube) => {
       if (!cube.userData.originalPosition) return;
 
       const targetPos = cube.userData.originalPosition.clone();
-      if (matrix === hoveredMatrix) {
-        targetPos.add(cube.userData.explodeDirection.clone().multiplyScalar(3));
+
+      if (Math.abs(velocityX) > throwThreshold || Math.abs(velocityY) > throwThreshold) {
+        const strength = Math.min(
+          Math.max(Math.abs(velocityX), Math.abs(velocityY)) * 100,
+          100
+        );
+        targetPos.add(cube.userData.explodeDirection.clone().multiplyScalar(strength));
       }
 
-      cube.position.lerp(targetPos, 0.25);
+      if (matrix === hoveredMatrix) {
+        targetPos.add(cube.userData.explodeDirection.clone().multiplyScalar(3));
+
+        if (cube.userData.isCenter) {
+          cube.scale.lerp(new THREE.Vector3(3, 3, 3), 0.1);
+
+          // Smooth face camera
+          const tempObj = new THREE.Object3D();
+          tempObj.position.copy(cube.position);
+          tempObj.lookAt(camera.position);
+          const targetQuat = tempObj.quaternion;
+          cube.quaternion.slerp(targetQuat, 0.1);
+        }
+      } else {
+        if (cube.userData.isCenter) {
+          cube.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
+        }
+      }
+
+      cube.position.lerp(targetPos, 0.07);
 
       if (cube.userData.rotationSpeed) {
         cube.rotation.x += cube.userData.rotationSpeed.x;
@@ -120,9 +161,10 @@ function animate() {
   });
 
   renderer.render(scene, camera);
+  requestAnimationFrame(animate);
 }
 
-renderer.setAnimationLoop(animate);
+animate();
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
