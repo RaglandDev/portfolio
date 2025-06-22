@@ -216,3 +216,12 @@ window.addEventListener('resize', () => {
 });
 
 
+
+const customCursor = document.createElement('div');
+customCursor.id = 'customCursor';
+document.body.appendChild(customCursor);
+
+window.addEventListener('mousemove', (e) => {
+  customCursor.style.left = `${e.clientX}px`;
+  customCursor.style.top = `${e.clientY}px`;
+});
