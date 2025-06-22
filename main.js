@@ -16,7 +16,7 @@ const CONFIG = {
   FAR: 1000,
   CAMERA_Z: 50,
   MOBILE_BREAKPOINT: 600, // px
-  CENTER_SCALE_MOBILE: 7,
+  CENTER_SCALE_MOBILE: 3,
   CENTER_SCALE_NORMAL: 1,
   SCALE_LERP_SPEED: 0.1,
 };
@@ -34,8 +34,9 @@ const state = {
 
 // === Setup ===
 const { scene, camera, renderer, matricesGroup } = setupScene(CONFIG);
-setupInteractions(state, camera, matricesGroup, renderer, (hoveredMatrix) => {
-  // On mobile, clear hoveredMatrix to prevent scaling/rotation issues
+
+setupInteractions(state, camera, matricesGroup, renderer, () => {
+  // On mobile, clear hoveredMatrix to prevent unwanted hover effects
   if (window.innerWidth < CONFIG.MOBILE_BREAKPOINT) {
     state.hoveredMatrix = null;
   }
@@ -53,12 +54,14 @@ function updateMatrixRotation() {
     state.rotated = true;
   }
 }
+
 window.addEventListener("resize", updateMatrixRotation);
 updateMatrixRotation(); // run once on startup
 
 // === Animation Loop ===
 function animate() {
   const isMobile = window.innerWidth < CONFIG.MOBILE_BREAKPOINT;
+
   applyInertia(state, matricesGroup);
 
   // Smooth Z rotation animation
@@ -69,13 +72,10 @@ function animate() {
   matricesGroup.rotation.x += (0 - matricesGroup.rotation.x) * 0.02;
   matricesGroup.rotation.y += (0 - matricesGroup.rotation.y) * 0.02;
 
+  // Update cube positions and animations
   updateMatrixCubes(state, matricesGroup, camera, isMobile);
 
-  // Scale center red cube up on mobile, else scale back to normal
-  const CENTER_SCALE_MOBILE = 3;
-  const CENTER_SCALE_NORMAL = 1;
-  const SCALE_LERP_SPEED = 0.1;
-
+  // Scale center red cubes on mobile view
   matricesGroup.children.forEach((matrix) => {
     matrix.children.forEach((cubeGroup) => {
       if (!cubeGroup.userData.isCenter) return;
@@ -87,25 +87,15 @@ function animate() {
 
       const isRedCube = mesh.material.color.equals(new THREE.Color("red"));
 
-      if (isMobile && isRedCube) {
-        cubeGroup.scale.lerp(
-          new THREE.Vector3(
-            CONFIG.CENTER_SCALE_MOBILE,
-            CONFIG.CENTER_SCALE_MOBILE,
-            CONFIG.CENTER_SCALE_MOBILE
-          ),
-          CONFIG.SCALE_LERP_SPEED
-        );
-      } else {
-        cubeGroup.scale.lerp(
-          new THREE.Vector3(
-            CONFIG.CENTER_SCALE_NORMAL,
-            CONFIG.CENTER_SCALE_NORMAL,
-            CONFIG.CENTER_SCALE_NORMAL
-          ),
-          CONFIG.SCALE_LERP_SPEED
-        );
-      }
+      const targetScale =
+        isMobile && isRedCube
+          ? CONFIG.CENTER_SCALE_MOBILE
+          : CONFIG.CENTER_SCALE_NORMAL;
+
+      cubeGroup.scale.lerp(
+        new THREE.Vector3(targetScale, targetScale, targetScale),
+        CONFIG.SCALE_LERP_SPEED
+      );
     });
   });
 
@@ -115,6 +105,7 @@ function animate() {
 
 animate();
 
+// === Helper: apply inertia to rotation ===
 function applyInertia(state, group) {
   const FRICTION = 0.98;
 

@@ -1,6 +1,7 @@
 import * as THREE from "three";
 
 export function updateMatrixCubes(state, matricesGroup, camera, isMobile) {
+  // Configuration constants
   const EXPLODE_THRESHOLD = 0.07;
   const MAX_EXPLODE_STRENGTH = 100;
   const HOVER_EXPLODE_PUSH = 3;
@@ -14,15 +15,17 @@ export function updateMatrixCubes(state, matricesGroup, camera, isMobile) {
 
   matricesGroup.children.forEach((matrix) => {
     matrix.children.forEach((cube) => {
+      // Skip cubes without originalPosition metadata
       if (!cube.userData.originalPosition) return;
 
+      // Clone original position as target
       let targetPos = cube.userData.originalPosition.clone();
 
       if (isMobile) {
-        // Move cubes toward center on mobile (merge)
+        // === Mobile view: merge cubes to center ===
         targetPos.set(0, 0, 0);
 
-        // Shrink cubes smoothly
+        // Smoothly shrink cubes when merging
         cube.scale.lerp(
           new THREE.Vector3(
             MOBILE_SHRINK_SCALE,
@@ -32,11 +35,11 @@ export function updateMatrixCubes(state, matricesGroup, camera, isMobile) {
           SCALE_LERP_SPEED
         );
 
-        // Slow down rotation when merged
+        // Slow down cube rotation as they merge
         cube.rotation.x *= 0.9;
         cube.rotation.y *= 0.9;
       } else {
-        // Restore original scale when not mobile
+        // === Desktop view: restore scale and apply explode effects ===
         cube.scale.lerp(new THREE.Vector3(1, 1, 1), SCALE_LERP_SPEED);
 
         if (!state.idle) {
@@ -44,6 +47,8 @@ export function updateMatrixCubes(state, matricesGroup, camera, isMobile) {
             Math.abs(state.velocityX),
             Math.abs(state.velocityY)
           );
+
+          // Explode cubes outward when velocity threshold exceeded
           if (maxVel > EXPLODE_THRESHOLD) {
             const strength = Math.min(maxVel * 100, MAX_EXPLODE_STRENGTH);
             targetPos.add(
@@ -51,6 +56,7 @@ export function updateMatrixCubes(state, matricesGroup, camera, isMobile) {
             );
           }
 
+          // Additional explode effect when hovering a matrix
           if (matrix === state.hoveredMatrix) {
             targetPos.add(
               cube.userData.explodeDirection
@@ -58,6 +64,7 @@ export function updateMatrixCubes(state, matricesGroup, camera, isMobile) {
                 .multiplyScalar(HOVER_EXPLODE_PUSH)
             );
 
+            // Scale and orient center cubes toward camera on hover
             if (cube.userData.isCenter) {
               cube.scale.lerp(
                 new THREE.Vector3(
@@ -74,6 +81,7 @@ export function updateMatrixCubes(state, matricesGroup, camera, isMobile) {
               cube.quaternion.slerp(tempObj.quaternion, SCALE_LERP_SPEED);
             }
           } else if (cube.userData.isCenter) {
+            // Return center cubes to normal scale when not hovered
             cube.scale.lerp(
               new THREE.Vector3(
                 CENTER_NORMAL_SCALE,
@@ -84,7 +92,7 @@ export function updateMatrixCubes(state, matricesGroup, camera, isMobile) {
             );
           }
         } else {
-          // Idle wiggle behavior
+          // === Idle behavior: gentle wiggle and rotation ===
           if (!cube.userData.idleVelocity) {
             cube.userData.idleVelocity = new THREE.Vector3(
               (Math.random() - 0.5) * IDLE_VELOCITY_MAGNITUDE,
@@ -93,6 +101,7 @@ export function updateMatrixCubes(state, matricesGroup, camera, isMobile) {
             );
           }
           cube.position.add(cube.userData.idleVelocity);
+
           cube.rotation.x +=
             cube.userData.rotationSpeed?.x ?? DEFAULT_ROTATION_SPEED;
           cube.rotation.y +=
@@ -100,13 +109,16 @@ export function updateMatrixCubes(state, matricesGroup, camera, isMobile) {
         }
       }
 
+      // Smoothly move cube towards target position
       cube.position.lerp(targetPos, POSITION_LERP_SPEED);
 
+      // Continue rotating cubes if applicable
       if (cube.userData.rotationSpeed && !state.idle && !isMobile) {
         cube.rotation.x += cube.userData.rotationSpeed.x;
         cube.rotation.y += cube.userData.rotationSpeed.y;
       }
 
+      // Update lineMaterial resolution for wireframe edges
       if (cube.userData.lineMaterial) {
         cube.userData.lineMaterial.resolution.set(
           window.innerWidth,
