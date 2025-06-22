@@ -32,11 +32,84 @@ const state = {
   rotated: true, // start rotated 45°
 };
 
-// === Setup ===
+// === Setup scene and renderer ===
 const { scene, camera, renderer, matricesGroup } = setupScene(CONFIG);
 
+// Append renderer to container div instead of body
+const threejsContainer = document.getElementById("threejs-container");
+threejsContainer.appendChild(renderer.domElement);
+
+// === Assign page IDs to each matrix's center cube ===
+matricesGroup.children.forEach((matrix, index) => {
+  const centerCube = matrix.children.find((child) => child.userData?.isCenter);
+  if (centerCube) {
+    centerCube.userData.pageId = `page${index + 1}`; // page1, page2, ...
+  }
+});
+
+// === Fade and page elements ===
+const fadeOverlay = document.getElementById("fadeOverlay");
+const pages = Array.from(document.querySelectorAll(".page"));
+
+// Initially show Three.js container, hide pages
+threejsContainer.style.display = "block";
+pages.forEach((p) => p.classList.remove("visible"));
+
+// --- Fade helpers ---
+// Helper to fade overlay in/out (returns Promise)
+function fadeOverlayIn() {
+  return new Promise((resolve) => {
+    fadeOverlay.style.opacity = "1";
+    fadeOverlay.style.pointerEvents = "auto";
+    fadeOverlay.addEventListener("transitionend", resolve, { once: true });
+  });
+}
+
+function fadeOverlayOut() {
+  return new Promise((resolve) => {
+    fadeOverlay.style.opacity = "0";
+    fadeOverlay.style.pointerEvents = "none";
+    fadeOverlay.addEventListener("transitionend", resolve, { once: true });
+  });
+}
+
+async function showPage(pageId) {
+  await fadeOverlayIn();
+
+  threejsContainer.style.display = "none";
+  pages.forEach((p) => p.classList.remove("visible"));
+  const page = document.getElementById(pageId);
+  if (page) page.classList.add("visible");
+
+  // Show normal cursor on pages, hide custom
+  document.body.classList.add("page-visible");
+
+  await fadeOverlayOut();
+}
+
+async function hidePagesAndShowThreeJS() {
+  fadeOverlay.classList.add("fast-fade");
+  await fadeOverlayIn();
+
+  pages.forEach((p) => p.classList.remove("visible"));
+  threejsContainer.style.display = "block";
+
+  await fadeOverlayOut();
+  fadeOverlay.classList.remove("fast-fade");
+}
+
+// Back button event setup
+pages.forEach((page) => {
+  const backBtn = page.querySelector(".back-btn");
+  if (backBtn) {
+    backBtn.addEventListener("click", () => {
+      hidePagesAndShowThreeJS();
+    });
+  }
+});
+
+// === Setup interactions with hover callback ===
 setupInteractions(state, camera, matricesGroup, renderer, () => {
-  // On mobile, clear hoveredMatrix to prevent unwanted hover effects
   if (window.innerWidth < CONFIG.MOBILE_BREAKPOINT) {
     state.hoveredMatrix = null;
   }
@@ -54,25 +127,21 @@ function updateMatrixRotation() {
     state.rotated = true;
   }
 }
-
 window.addEventListener("resize", updateMatrixRotation);
-updateMatrixRotation(); // run once on startup
+updateMatrixRotation(); // initial run
 
-// === Animation Loop ===
+// === Animation loop ===
 function animate() {
   const isMobile = window.innerWidth < CONFIG.MOBILE_BREAKPOINT;
 
   applyInertia(state, matricesGroup);
 
-  // Smooth Z rotation animation
   const targetZ = matricesGroup.userData.targetRotationZ ?? -Math.PI / 4;
   matricesGroup.rotation.z += (targetZ - matricesGroup.rotation.z) * 0.1;
 
-  // Return to upright orientation on X/Y
   matricesGroup.rotation.x += (0 - matricesGroup.rotation.x) * 0.02;
   matricesGroup.rotation.y += (0 - matricesGroup.rotation.y) * 0.02;
 
-  // Update cube positions and animations
   updateMatrixCubes(state, matricesGroup, camera, isMobile);
 
   // Scale center red cubes on mobile view
@@ -86,7 +155,6 @@ function animate() {
       if (!mesh) return;
 
       const isRedCube = mesh.material.color.equals(new THREE.Color("red"));
-
       const targetScale =
         isMobile && isRedCube
           ? CONFIG.CENTER_SCALE_MOBILE
@@ -102,10 +170,9 @@ function animate() {
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }
-
 animate();
 
-// === Helper: apply inertia to rotation ===
+// === Helper: inertia for rotation ===
 function applyInertia(state, group) {
   const FRICTION = 0.98;
 
@@ -125,3 +192,17 @@ function applyInertia(state, group) {
     }
   }
 }
+
+// === Click listener for showing pages ===
+renderer.domElement.addEventListener("click", () => {
+  if (!state.hoveredMatrix) return;
+
+  const centerCube = state.hoveredMatrix.children.find(
+    (child) => child.userData?.isCenter
+  );
+
+  const pageId = centerCube?.userData?.pageId;
+  if (!pageId) return;
+
+  showPage(pageId);
+});

@@ -155,11 +155,87 @@ export function setupInteractions(
     state.isDragging = false;
   });
 
-  window.addEventListener("resize", () => {
-    if (window.innerWidth < 600) {
-      customCursor.style.display = "none";
-    } else {
-      customCursor.style.display = "block";
+  renderer.domElement.addEventListener("click", (event) => {
+    // Use hoveredMatrix if available (desktop)
+    if (state.hoveredMatrix) {
+      const centerCube = state.hoveredMatrix.children.find(
+        (child) => child.userData?.isCenter
+      );
+      const pageId = centerCube?.userData?.pageId;
+      if (!pageId) return;
+
+      const fadeOverlay = document.getElementById("fadeOverlay");
+      const threejsContainer = document.getElementById("threejs-container");
+      const targetPage = document.getElementById(pageId);
+
+      // Start fade out of Three.js container
+      fadeOverlay.style.pointerEvents = "auto";
+      fadeOverlay.style.opacity = "1";
+
+      fadeOverlay.addEventListener(
+        "transitionend",
+        () => {
+          // Hide Three.js canvas/container
+          threejsContainer.style.display = "none";
+
+          // Show the target page
+          targetPage.classList.add("visible");
+
+          // Fade out the overlay to reveal the page
+          fadeOverlay.style.opacity = "0";
+          fadeOverlay.style.pointerEvents = "none";
+        },
+        { once: true }
+      );
+
+      return;
     }
+
+    // If no hoveredMatrix (likely mobile), raycast from click position:
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+
+    let clickedMatrix = null;
+    for (const matrix of matricesGroup.children) {
+      const target = matrix.userData.raycastTarget;
+      if (target && raycaster.intersectObject(target, false).length > 0) {
+        clickedMatrix = matrix;
+        break;
+      }
+    }
+
+    if (!clickedMatrix) return;
+
+    const centerCube = clickedMatrix.children.find(
+      (child) => child.userData?.isCenter
+    );
+    const pageId = centerCube?.userData?.pageId;
+    if (!pageId) return;
+
+    const fadeOverlay = document.getElementById("fadeOverlay");
+    const threejsContainer = document.getElementById("threejs-container");
+    const targetPage = document.getElementById(pageId);
+
+    // Start fade out of Three.js container
+    fadeOverlay.style.pointerEvents = "auto";
+    fadeOverlay.style.opacity = "1";
+
+    fadeOverlay.addEventListener(
+      "transitionend",
+      () => {
+        // Hide Three.js canvas/container
+        threejsContainer.style.display = "none";
+
+        // Show the target page
+        targetPage.classList.add("visible");
+
+        // Fade out the overlay to reveal the page
+        fadeOverlay.style.opacity = "0";
+        fadeOverlay.style.pointerEvents = "none";
+      },
+      { once: true }
+    );
   });
 }

@@ -67,6 +67,7 @@ export function Matrix3D(
           hitSphere.position.set(0, -5, 0); // Offset to sit in front of center cube
           group.add(hitSphere);
           group.userData.raycastTarget = hitSphere;
+          cube.userData.pageId = "page1";
         }
       }
     }
