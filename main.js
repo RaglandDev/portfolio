@@ -22,6 +22,8 @@ const FOV = 75;
 const ASPECT_RATIO = window.innerWidth / window.innerHeight;
 const NEAR = 0.1;
 const FAR = 1000;
+const CAMERA_Z = 50;
+const VIEW_HEIGHT = 65;
 
 // === State ===
 let isDragging = false;
@@ -35,12 +37,13 @@ let hoveredMatrix = null;
 const scene = new THREE.Scene();
 
 const camera = new THREE.PerspectiveCamera(FOV, ASPECT_RATIO, NEAR, FAR);
-camera.position.z = 50;
+camera.position.z = CAMERA_Z;
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(BACKGROUND_COLOR, 1);
 document.body.appendChild(renderer.domElement);
+updateCameraFOV(); // call once on startup
 
 // === Matrices Group ===
 const matricesGroup = new THREE.Group();
@@ -85,6 +88,70 @@ function animate() {
 
 animate();
 
+// === Event Listeners ===
+window.addEventListener("resize", updateCameraFOV);
+
+window.addEventListener("mousemove", (event) => {
+  customCursor.style.left = `${event.clientX}px`;
+  customCursor.style.top = `${event.clientY}px`;
+
+  idle = false;
+
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+  raycaster.setFromCamera(mouse, camera);
+  hoveredMatrix = null;
+
+  // "Find" the matrix that is currently being hovered over
+  for (const matrix of matricesGroup.children) {
+    const target = matrix.userData.raycastTarget;
+    if (target && raycaster.intersectObject(target, false).length > 0) {
+      hoveredMatrix = matrix;
+      break;
+    }
+  }
+
+  // Spin around X or Y axis
+  if (isDragging) {
+    const deltaX = event.clientX - previousMousePosition.x;
+    const deltaY = event.clientY - previousMousePosition.y;
+
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+      const rotY = deltaX * 0.005;
+      matricesGroup.rotation.y += rotY;
+      velocityY = rotY;
+      velocityX = 0;
+    } else {
+      const rotX = deltaY * 0.005;
+      matricesGroup.rotation.x += rotX;
+      velocityX = rotX;
+      velocityY = 0;
+    }
+
+    previousMousePosition = { x: event.clientX, y: event.clientY };
+  }
+});
+
+window.addEventListener("mousedown", (event) => {
+  isDragging = true;
+  previousMousePosition = { x: event.clientX, y: event.clientY };
+  velocityX = 0;
+  velocityY = 0;
+});
+
+window.addEventListener("mouseup", () => {
+  isDragging = false;
+});
+
+window.addEventListener("mouseout", (event) => {
+  if (!event.relatedTarget) idle = true;
+});
+
+renderer.domElement.addEventListener("mouseenter", () => {
+  idle = false;
+});
+
 // === Helpers ===
 function applyInertia() {
   if (!isDragging && !idle) {
@@ -102,6 +169,15 @@ function applyInertia() {
       velocityY = 0;
     }
   }
+}
+
+function updateCameraFOV() {
+  const fovRadians = 2 * Math.atan(VIEW_HEIGHT / 2 / CAMERA_Z);
+  camera.fov = THREE.MathUtils.radToDeg(fovRadians);
+
+  camera.aspect = ASPECT_RATIO;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
 function updateMatrixCubes() {
@@ -184,71 +260,3 @@ function updateMatrixCubes() {
     });
   });
 }
-
-// === Event Listeners ===
-window.addEventListener("resize", () => {
-  camera.aspect = ASPECT_RATIO;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-window.addEventListener("mousemove", (event) => {
-  customCursor.style.left = `${event.clientX}px`;
-  customCursor.style.top = `${event.clientY}px`;
-
-  idle = false;
-
-  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-  raycaster.setFromCamera(mouse, camera);
-  hoveredMatrix = null;
-
-  // "Find" the matrix that is currently being hovered over
-  for (const matrix of matricesGroup.children) {
-    const target = matrix.userData.raycastTarget;
-    if (target && raycaster.intersectObject(target, false).length > 0) {
-      hoveredMatrix = matrix;
-      break;
-    }
-  }
-
-  // Spin around X or Y axis
-  if (isDragging) {
-    const deltaX = event.clientX - previousMousePosition.x;
-    const deltaY = event.clientY - previousMousePosition.y;
-
-    if (Math.abs(deltaX) > Math.abs(deltaY)) {
-      const rotY = deltaX * 0.005;
-      matricesGroup.rotation.y += rotY;
-      velocityY = rotY;
-      velocityX = 0;
-    } else {
-      const rotX = deltaY * 0.005;
-      matricesGroup.rotation.x += rotX;
-      velocityX = rotX;
-      velocityY = 0;
-    }
-
-    previousMousePosition = { x: event.clientX, y: event.clientY };
-  }
-});
-
-window.addEventListener("mousedown", (event) => {
-  isDragging = true;
-  previousMousePosition = { x: event.clientX, y: event.clientY };
-  velocityX = 0;
-  velocityY = 0;
-});
-
-window.addEventListener("mouseup", () => {
-  isDragging = false;
-});
-
-window.addEventListener("mouseout", (event) => {
-  if (!event.relatedTarget) idle = true;
-});
-
-renderer.domElement.addEventListener("mouseenter", () => {
-  idle = false;
-});
