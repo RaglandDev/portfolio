@@ -2,78 +2,82 @@ import * as THREE from "three";
 import { Matrix3D } from "../components/Matrix3D.js";
 
 export function setupScene(config) {
-  const {
-    BACKGROUND_COLOR,
-    FOV,
-    NEAR,
-    FAR,
-    CAMERA_Z,
-    CUBE_SPACING,
-    CUBE_OUTLINE_COLOR,
-    CUBE_COLOR,
-    CUBE_EDGE_WIDTH,
-    MATRIX_SPACING,
-    MOBILE_BREAKPOINT,
-  } = config;
-
-  // Create scene
   const scene = new THREE.Scene();
+  const camera = createCamera(config);
+  const renderer = createRenderer(config);
+  const matricesGroup = createMatricesGroup(config);
 
-  // Setup camera with initial aspect ratio
+  scene.add(matricesGroup);
+
+  // Setup responsive behavior
+  setupResizeHandler(camera, renderer, matricesGroup, config);
+
+  return { scene, camera, renderer, matricesGroup };
+}
+
+// === Helper: Create camera ===
+function createCamera({ FOV, NEAR, FAR, CAMERA_Z }) {
   const aspect = window.innerWidth / window.innerHeight;
   const camera = new THREE.PerspectiveCamera(FOV, aspect, NEAR, FAR);
   camera.position.z = CAMERA_Z;
+  return camera;
+}
 
-  // Setup renderer and append canvas to DOM
+// === Helper: Create renderer ===
+function createRenderer({ BACKGROUND_COLOR }) {
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setClearColor(BACKGROUND_COLOR, 1);
-  document.body.appendChild(renderer.domElement);
+  return renderer;
+}
 
-  // Create group to hold 3x3 matrix grids
-  const matricesGroup = new THREE.Group();
-  matricesGroup.rotation.z = -Math.PI / 4; // Initial rotation for diagonal view
+// === Helper: Create grid of 3x3 matrices ===
+function createMatricesGroup(config) {
+  const group = new THREE.Group();
+  group.rotation.z = -Math.PI / 4;
 
-  // Populate group with 3x3 Matrix3D objects spaced evenly
   for (let i = 0; i < 3; i++) {
     for (let j = 0; j < 3; j++) {
       const matrix = Matrix3D(
-        CUBE_SPACING,
-        CUBE_OUTLINE_COLOR,
-        CUBE_COLOR,
-        CUBE_EDGE_WIDTH
+        config.CUBE_SPACING,
+        config.CUBE_OUTLINE_COLOR,
+        config.CUBE_COLOR,
+        config.CUBE_EDGE_WIDTH
       );
       matrix.position.set(
-        (i - 1) * MATRIX_SPACING,
-        (j - 1) * MATRIX_SPACING,
+        (i - 1) * config.MATRIX_SPACING,
+        (j - 1) * config.MATRIX_SPACING,
         0
       );
-      matricesGroup.add(matrix);
+      group.add(matrix);
     }
   }
-  scene.add(matricesGroup);
 
-  // Handle window resizing to update camera and renderer settings
-  window.addEventListener("resize", () => {
+  return group;
+}
+
+// === Helper: Handle window resizing ===
+function setupResizeHandler(camera, renderer, matricesGroup, config) {
+  const { MOBILE_BREAKPOINT, CAMERA_Z, FOV } = config;
+
+  const resize = () => {
     const isMobile = window.innerWidth < MOBILE_BREAKPOINT;
 
-    // Adjust group rotation based on viewport size
+    // Update matrix rotation
     matricesGroup.targetRotationZ = isMobile ? 0 : -Math.PI / 4;
 
-    // Adjust camera zoom based on mobile or desktop
+    // Adjust camera zoom
     camera.position.z = isMobile ? CAMERA_Z * 1.3 : CAMERA_Z;
     camera.fov = FOV;
 
-    // Update camera aspect and projection matrix
+    // Update camera projection
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
 
-    // Resize renderer to fill window
+    // Resize renderer
     renderer.setSize(window.innerWidth, window.innerHeight);
-  });
+  };
 
-  // Trigger resize handler initially to set correct layout
-  window.dispatchEvent(new Event("resize"));
-
-  return { scene, camera, renderer, matricesGroup };
+  window.addEventListener("resize", resize);
+  resize(); // Initial run
 }
