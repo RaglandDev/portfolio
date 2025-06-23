@@ -4,32 +4,30 @@ import { LineMaterial } from "three/addons/lines/LineMaterial.js";
 import { LineGeometry } from "three/addons/lines/LineGeometry.js";
 
 /**
- * Creates a cube mesh with an outline using LineSegments2.
+ * Creates a cube with an outline using LineSegments2.
  *
  * @param {string} boxColor - Fill color of the cube.
  * @param {string} edgeColor - Color of the wireframe edges.
  * @param {number} edgeWidth - Thickness of the wireframe edges.
- * @returns {THREE.Group} Group containing the cube and its outline.
+ * @returns {THREE.Group} Group containing the cube mesh and its outline.
  */
 export function Box(boxColor = "black", edgeColor = "black", edgeWidth = 2) {
   const group = new THREE.Group();
+  const size = 2;
+  const half = size / 2;
 
   // === Solid Cube ===
-  const cubeSize = 2;
-  const cubeGeometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
-  const cubeMaterial = new THREE.MeshBasicMaterial({
+  const geometry = new THREE.BoxGeometry(size, size, size);
+  const material = new THREE.MeshBasicMaterial({
     color: boxColor,
     polygonOffset: true,
     polygonOffsetFactor: 1,
     polygonOffsetUnits: 1,
   });
-
-  const cubeMesh = new THREE.Mesh(cubeGeometry, cubeMaterial);
-  group.add(cubeMesh);
+  const mesh = new THREE.Mesh(geometry, material);
+  group.add(mesh);
 
   // === Wireframe Outline ===
-  const half = cubeSize / 2;
-
   const vertices = [
     [-half, -half, -half],
     [half, -half, -half],
@@ -56,10 +54,7 @@ export function Box(boxColor = "black", edgeColor = "black", edgeWidth = 2) {
     [3, 7],
   ];
 
-  const positions = [];
-  for (const [start, end] of edges) {
-    positions.push(...vertices[start], ...vertices[end]);
-  }
+  const positions = edges.flatMap(([a, b]) => [...vertices[a], ...vertices[b]]);
 
   const lineGeometry = new LineGeometry();
   lineGeometry.setPositions(positions);
@@ -69,8 +64,8 @@ export function Box(boxColor = "black", edgeColor = "black", edgeWidth = 2) {
     linewidth: edgeWidth,
   });
 
-  const edgeLines = new LineSegments2(lineGeometry, lineMaterial);
-  group.add(edgeLines);
+  const outline = new LineSegments2(lineGeometry, lineMaterial);
+  group.add(outline);
 
   // === Metadata ===
   group.userData.lineMaterial = lineMaterial;
