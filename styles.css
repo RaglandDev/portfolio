@@ -1,73 +1,50 @@
+/* === Base Reset === */
 body {
   margin: 0;
   font-family: sans-serif;
-}
-
-.navbar {
-  background-color: #000000;
-  padding: 1rem 0;
-  text-align: center;
-}
-
-.menu-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: inline-flex;
-  gap: 2rem; /* space between buttons */
-}
-
-.menu-list li a {
-  text-decoration: none;
-  color: #ffffff;
-  font-weight: bold;
-}
-
-body {
   cursor: none;
 }
 
+/* === Custom Cursor === */
 #customCursor {
   position: fixed;
-  pointer-events: none;
   width: 40px;
   height: 40px;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   border-radius: 50%;
   transform: translate(-50%, -50%);
+  pointer-events: none;
   transition: background 0.2s ease;
   z-index: 19999;
 }
 
-.hidden {
-  display: none;
-}
-
+/* === Page View === */
 .page {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: white;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.5s ease;
-  position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: white;
-  z-index: 10000;
-  cursor: none;
-
-  /* Center content */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  z-index: 10000;
+  cursor: none;
 }
+
 .page.visible {
   opacity: 1;
   pointer-events: auto;
 }
 
-
+/* === Fade Overlay === */
 #fadeOverlay {
   position: fixed;
-  top:0; left:0; width:100%; height:100%;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
   background: black;
   opacity: 0;
   pointer-events: none;
@@ -79,26 +56,33 @@ body {
   transition: opacity 0.1s ease;
 }
 
+/* === Back Button === */
 .back-btn {
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  display: inline-flex; /* keeps SVG inline */
-  align-items: center;
-  justify-content: center;
-  color: black; /* arrow color, adjust if needed */
   position: absolute;
   top: 1rem;
   left: 1rem;
-}
-
-
-
-button, a, input, textarea, select, label {
+  background: none;
+  border: none;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: black;
   cursor: none;
 }
 
+/* === Global UI Element Cursor Override === */
+button,
+a,
+input,
+textarea,
+select,
+label,
 .back-btn {
-  cursor: none; /* hide native hand cursor */
+  cursor: none;
+}
+
+/* === Utility === */
+.hidden {
+  display: none;
 }
