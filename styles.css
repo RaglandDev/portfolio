@@ -86,3 +86,21 @@ label,
 .hidden {
   display: none;
 }
+
+/* Hide cursor and custom cursor on mobile */
+@media (max-width: 600px) {
+  body,
+  button,
+  a,
+  input,
+  textarea,
+  select,
+  label,
+  .back-btn {
+    cursor: none;
+  }
+
+  #customCursor {
+    display: none;
+  }
+}
