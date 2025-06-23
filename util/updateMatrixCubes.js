@@ -15,96 +15,150 @@ export function updateMatrixCubes(state, matricesGroup, camera, isMobile) {
   };
 
   matricesGroup.children.forEach((matrix) => {
-    const isHovered = matrix === state.hoveredMatrix;
-
     matrix.children.forEach((cube) => {
       if (!cube.userData.originalPosition) return;
 
-      const { isCenter, explodeDirection, lineMaterial } = cube.userData;
-
-      // === Target values ===
-      let targetPos = cube.userData.originalPosition.clone();
-      let targetScale = new THREE.Vector3(1, 1, 1);
+      const isCenter = cube.userData.isCenter;
+      const targetPos = getTargetPosition(
+        cube,
+        matrix,
+        state,
+        isMobile,
+        CONFIG
+      );
 
       if (isMobile) {
-        // === Mobile mode: merge inward and shrink ===
-        targetPos.set(0, 0, 0);
-        targetScale.setScalar(CONFIG.MOBILE_SHRINK_SCALE);
-
-        cube.scale.lerp(targetScale, CONFIG.SCALE_LERP_SPEED);
-        cube.rotation.x *= 0.9;
-        cube.rotation.y *= 0.9;
+        handleMobileCube(cube, CONFIG);
       } else {
-        // === Desktop mode ===
-
-        // Velocity-based explode
-        if (!state.idle) {
-          const maxVel = Math.max(
-            Math.abs(state.velocityX),
-            Math.abs(state.velocityY)
-          );
-
-          if (maxVel > CONFIG.EXPLODE_THRESHOLD) {
-            const strength = Math.min(
-              maxVel * 100,
-              CONFIG.MAX_EXPLODE_STRENGTH
-            );
-            targetPos.add(explodeDirection.clone().multiplyScalar(strength));
-          }
-
-          // Hover explode
-          if (isHovered) {
-            targetPos.add(
-              explodeDirection.clone().multiplyScalar(CONFIG.HOVER_EXPLODE_PUSH)
-            );
-
-            if (isCenter) {
-              targetScale.setScalar(CONFIG.CENTER_HOVER_SCALE);
-
-              const lookTarget = new THREE.Object3D();
-              lookTarget.position.copy(cube.position);
-              lookTarget.lookAt(camera.position);
-              cube.quaternion.slerp(
-                lookTarget.quaternion,
-                CONFIG.SCALE_LERP_SPEED
-              );
-            }
-          } else if (isCenter) {
-            targetScale.setScalar(CONFIG.CENTER_NORMAL_SCALE);
-          }
-        } else {
-          // === Idle behavior: random motion and spin ===
-          if (!cube.userData.idleVelocity) {
-            cube.userData.idleVelocity = new THREE.Vector3(
-              (Math.random() - 0.5) * CONFIG.IDLE_VELOCITY_MAGNITUDE,
-              (Math.random() - 0.5) * CONFIG.IDLE_VELOCITY_MAGNITUDE,
-              (Math.random() - 0.5) * CONFIG.IDLE_VELOCITY_MAGNITUDE
-            );
-          }
-
-          cube.position.add(cube.userData.idleVelocity);
-
-          cube.rotation.x +=
-            cube.userData.rotationSpeed?.x ?? CONFIG.DEFAULT_ROTATION_SPEED;
-          cube.rotation.y +=
-            cube.userData.rotationSpeed?.y ?? CONFIG.DEFAULT_ROTATION_SPEED;
-        }
-
-        cube.scale.lerp(targetScale, CONFIG.SCALE_LERP_SPEED);
+        handleDesktopCube(cube, matrix, state, camera, CONFIG);
       }
 
-      // === Apply position + continuous rotation ===
+      // Move toward target position
       cube.position.lerp(targetPos, CONFIG.POSITION_LERP_SPEED);
 
+      // Continue rotating if not idle and not on mobile
       if (cube.userData.rotationSpeed && !state.idle && !isMobile) {
         cube.rotation.x += cube.userData.rotationSpeed.x;
         cube.rotation.y += cube.userData.rotationSpeed.y;
       }
 
-      // === Update line resolution for crisp wireframes ===
-      if (lineMaterial) {
-        lineMaterial.resolution.set(window.innerWidth, window.innerHeight);
+      // Update wireframe material resolution
+      if (cube.userData.lineMaterial) {
+        cube.userData.lineMaterial.resolution.set(
+          window.innerWidth,
+          window.innerHeight
+        );
       }
     });
   });
+}
+
+// === Helpers ===
+
+function getTargetPosition(cube, matrix, state, isMobile, CONFIG) {
+  const { EXPLODE_THRESHOLD, MAX_EXPLODE_STRENGTH, HOVER_EXPLODE_PUSH } =
+    CONFIG;
+  const basePos = cube.userData.originalPosition.clone();
+
+  if (isMobile) {
+    return new THREE.Vector3(0, 0, 0);
+  }
+
+  let target = basePos;
+
+  if (!state.idle) {
+    const maxVel = Math.max(
+      Math.abs(state.velocityX),
+      Math.abs(state.velocityY)
+    );
+
+    if (maxVel > EXPLODE_THRESHOLD) {
+      const strength = Math.min(maxVel * 100, MAX_EXPLODE_STRENGTH);
+      target.add(
+        cube.userData.explodeDirection.clone().multiplyScalar(strength)
+      );
+    }
+
+    if (matrix === state.hoveredMatrix) {
+      target.add(
+        cube.userData.explodeDirection
+          .clone()
+          .multiplyScalar(HOVER_EXPLODE_PUSH)
+      );
+    }
+  }
+
+  return target;
+}
+
+function handleMobileCube(cube, CONFIG) {
+  const { MOBILE_SHRINK_SCALE, SCALE_LERP_SPEED } = CONFIG;
+
+  cube.scale.lerp(
+    new THREE.Vector3(
+      MOBILE_SHRINK_SCALE,
+      MOBILE_SHRINK_SCALE,
+      MOBILE_SHRINK_SCALE
+    ),
+    SCALE_LERP_SPEED
+  );
+
+  // Slow down rotation
+  cube.rotation.x *= 0.9;
+  cube.rotation.y *= 0.9;
+}
+
+function handleDesktopCube(cube, matrix, state, camera, CONFIG) {
+  const {
+    SCALE_LERP_SPEED,
+    CENTER_HOVER_SCALE,
+    CENTER_NORMAL_SCALE,
+    IDLE_VELOCITY_MAGNITUDE,
+    DEFAULT_ROTATION_SPEED,
+  } = CONFIG;
+
+  cube.scale.lerp(new THREE.Vector3(1, 1, 1), SCALE_LERP_SPEED);
+
+  const isCenter = cube.userData.isCenter;
+
+  if (!state.idle) {
+    if (matrix === state.hoveredMatrix && isCenter) {
+      cube.scale.lerp(
+        new THREE.Vector3(
+          CENTER_HOVER_SCALE,
+          CENTER_HOVER_SCALE,
+          CENTER_HOVER_SCALE
+        ),
+        SCALE_LERP_SPEED
+      );
+
+      const tempObj = new THREE.Object3D();
+      tempObj.position.copy(cube.position);
+      tempObj.lookAt(camera.position);
+      cube.quaternion.slerp(tempObj.quaternion, SCALE_LERP_SPEED);
+    } else if (isCenter) {
+      cube.scale.lerp(
+        new THREE.Vector3(
+          CENTER_NORMAL_SCALE,
+          CENTER_NORMAL_SCALE,
+          CENTER_NORMAL_SCALE
+        ),
+        SCALE_LERP_SPEED
+      );
+    }
+  } else {
+    // Idle behavior: gentle wiggle and idle rotation
+    if (!cube.userData.idleVelocity) {
+      cube.userData.idleVelocity = new THREE.Vector3(
+        (Math.random() - 0.5) * IDLE_VELOCITY_MAGNITUDE,
+        (Math.random() - 0.5) * IDLE_VELOCITY_MAGNITUDE,
+        (Math.random() - 0.5) * IDLE_VELOCITY_MAGNITUDE
+      );
+    }
+
+    cube.position.add(cube.userData.idleVelocity);
+
+    cube.rotation.x += cube.userData.rotationSpeed?.x ?? DEFAULT_ROTATION_SPEED;
+    cube.rotation.y += cube.userData.rotationSpeed?.y ?? DEFAULT_ROTATION_SPEED;
+  }
 }
