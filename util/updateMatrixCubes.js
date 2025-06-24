@@ -11,7 +11,6 @@ export function updateMatrixCubes(state, matricesGroup, camera, isMobile) {
     POSITION_LERP_SPEED: 0.07,
     IDLE_VELOCITY_MAGNITUDE: 40,
     DEFAULT_ROTATION_SPEED: 0.05,
-    MOBILE_SHRINK_SCALE: 1,
   };
 
   matricesGroup.children.forEach((matrix) => {
@@ -27,12 +26,7 @@ export function updateMatrixCubes(state, matricesGroup, camera, isMobile) {
         CONFIG
       );
 
-      if (isMobile) {
-        handleMobileCube(cube, CONFIG);
-      } else {
-        handleDesktopCube(cube, matrix, state, camera, CONFIG);
-      }
-
+      handleDesktopCube(cube, matrix, state, camera, CONFIG);
       // Move toward target position
       cube.position.lerp(targetPos, CONFIG.POSITION_LERP_SPEED);
 
@@ -89,23 +83,6 @@ function getTargetPosition(cube, matrix, state, isMobile, CONFIG) {
   }
 
   return target;
-}
-
-function handleMobileCube(cube, CONFIG) {
-  const { MOBILE_SHRINK_SCALE, SCALE_LERP_SPEED } = CONFIG;
-
-  cube.scale.lerp(
-    new THREE.Vector3(
-      MOBILE_SHRINK_SCALE,
-      MOBILE_SHRINK_SCALE,
-      MOBILE_SHRINK_SCALE
-    ),
-    SCALE_LERP_SPEED
-  );
-
-  // Slow down rotation
-  cube.rotation.x *= 0.9;
-  cube.rotation.y *= 0.9;
 }
 
 function handleDesktopCube(cube, matrix, state, camera, CONFIG) {
