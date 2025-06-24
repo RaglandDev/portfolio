@@ -50,11 +50,14 @@ setupInteractions(state, camera, matricesGroup, renderer, () => {
 updateMatrixRotation();
 window.addEventListener("resize", updateMatrixRotation);
 
-// === Assign Page IDs to Matrix Center Cubes ===
+// === Assign Page IDs and 'clicks' property to Matrix Center Cubes ===
 function assignPageIdsToCenterCubes() {
   matricesGroup.children.forEach((matrix, i) => {
     const centerCube = matrix.children.find((c) => c.userData?.isCenter);
-    if (centerCube) centerCube.userData.pageId = `page${i + 1}`;
+    if (centerCube) {
+      centerCube.userData.pageId = `page${i + 1}`;
+      centerCube.userData.clicks = 0;
+    }
   });
 }
 
@@ -125,14 +128,35 @@ function setupBackButtons() {
   });
 }
 
-// === Click Interaction: Navigate to Page ===
+// === Click Interaction: Increment clicks, reset previous clicks if different cube, and navigate on double click ===
 renderer.domElement.addEventListener("click", () => {
   const matrix = state.hoveredMatrix;
   if (!matrix) return;
 
   const centerCube = matrix.children.find((c) => c.userData?.isCenter);
-  const pageId = centerCube?.userData?.pageId;
-  if (pageId) showPage(pageId);
+  if (!centerCube) return;
+
+  // Reset clicks on previously clicked cube if different
+  if (
+    state.lastClickedCenterCube &&
+    state.lastClickedCenterCube !== centerCube
+  ) {
+    state.lastClickedCenterCube.userData.clicks = 0;
+  }
+
+  // Update last clicked cube
+  state.lastClickedCenterCube = centerCube;
+
+  // Increment clicks
+  centerCube.userData.clicks += 1;
+
+  const pageId = centerCube.userData.pageId;
+
+  if (pageId && centerCube.userData.clicks >= 2) {
+    showPage(pageId);
+    centerCube.userData.clicks = 0;
+    state.lastClickedCenterCube = null; // Clear last clicked on navigation
+  }
 });
 
 // === Rotation Inertia ===

@@ -159,19 +159,4 @@ export function setupInteractions(
   window.addEventListener("touchcancel", () => {
     state.isDragging = false;
   });
-
-  // === Click Handling (Desktop + Mobile) ===
-
-  renderer.domElement.addEventListener("click", (e) => {
-    const matrix =
-      state.hoveredMatrix ??
-      (() => {
-        updateHoverMatrix(e.clientX, e.clientY);
-        return getIntersectedMatrix();
-      })();
-
-    if (matrix) {
-      navigateToMatrixPage(matrix);
-    }
-  });
 }
