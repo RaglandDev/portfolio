@@ -11,7 +11,7 @@ export function updateMatrixCubes(state, matricesGroup, camera, isMobile) {
     POSITION_LERP_SPEED: 0.07,
     IDLE_VELOCITY_MAGNITUDE: 40,
     DEFAULT_ROTATION_SPEED: 0.05,
-    MOBILE_SHRINK_SCALE: 0.2,
+    MOBILE_SHRINK_SCALE: 1,
   };
 
   matricesGroup.children.forEach((matrix) => {
