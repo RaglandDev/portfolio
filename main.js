@@ -29,6 +29,9 @@ const state = {
   velocityY: 0,
   idle: false,
   hoveredMatrix: null,
+  hoveredCenterCube: null,
+  hoverStartTime: 0,
+  hoverThresholdMs: 500,
   rotated: true,
 };
 
@@ -128,34 +131,85 @@ function setupBackButtons() {
   });
 }
 
-// === Click Interaction: Increment clicks, reset previous clicks if different cube, and navigate on double click ===
-renderer.domElement.addEventListener("click", () => {
+// === Hover Tracking: Update hoveredCenterCube and hoverStartTime ===
+function updateHoverState() {
   const matrix = state.hoveredMatrix;
-  if (!matrix) return;
-
-  const centerCube = matrix.children.find((c) => c.userData?.isCenter);
-  if (!centerCube) return;
-
-  // Reset clicks on previously clicked cube if different
-  if (
-    state.lastClickedCenterCube &&
-    state.lastClickedCenterCube !== centerCube
-  ) {
-    state.lastClickedCenterCube.userData.clicks = 0;
+  if (!matrix) {
+    state.hoveredCenterCube = null;
+    state.hoverStartTime = 0;
+    return;
   }
 
-  // Update last clicked cube
-  state.lastClickedCenterCube = centerCube;
+  const centerCube = matrix.children.find((c) => c.userData?.isCenter);
+  if (!centerCube) {
+    state.hoveredCenterCube = null;
+    state.hoverStartTime = 0;
+    return;
+  }
 
-  // Increment clicks
-  centerCube.userData.clicks += 1;
+  if (state.hoveredCenterCube !== centerCube) {
+    state.hoveredCenterCube = centerCube;
+    state.hoverStartTime = performance.now();
+  }
+}
 
-  const pageId = centerCube.userData.pageId;
+// === Click Interaction: Navigate if hovered >= 0.5s and clicked on same cube ===
+renderer.domElement.addEventListener("click", (event) => {
+  // On desktop, rely on hoveredMatrix and hover time.
+  if (!isMobile()) {
+    const matrix = state.hoveredMatrix;
+    if (!matrix) return;
 
-  if (pageId && centerCube.userData.clicks >= 2) {
-    showPage(pageId);
-    centerCube.userData.clicks = 0;
-    state.lastClickedCenterCube = null; // Clear last clicked on navigation
+    const centerCube = matrix.children.find((c) => c.userData?.isCenter);
+    if (!centerCube) return;
+
+    updateHoverState();
+
+    if (centerCube !== state.hoveredCenterCube) {
+      // Clicked cube not same as hovered cube, ignore
+      return;
+    }
+
+    const hoverDuration = performance.now() - state.hoverStartTime;
+    if (hoverDuration >= state.hoverThresholdMs) {
+      const pageId = centerCube.userData.pageId;
+      if (pageId) {
+        showPage(pageId);
+        state.hoveredCenterCube = null;
+        state.hoverStartTime = 0;
+      }
+    }
+  } else {
+    // Mobile: find intersected center cube from pointer position and navigate immediately.
+
+    // Use raycaster to get intersected cube under click
+    const mouse = new THREE.Vector2();
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
+
+    // Collect all center cube meshes for raycast
+    const centerMeshes = [];
+    matricesGroup.children.forEach((matrix) => {
+      const centerCube = matrix.children.find((c) => c.userData?.isCenter);
+      if (centerCube) {
+        const mesh = centerCube.children.find((c) => c instanceof THREE.Mesh);
+        if (mesh) centerMeshes.push(mesh);
+      }
+    });
+
+    const intersects = raycaster.intersectObjects(centerMeshes, false);
+    if (intersects.length > 0) {
+      const mesh = intersects[0].object;
+      const centerCube = mesh.parent; // The group holding mesh
+
+      const pageId = centerCube.userData.pageId;
+      if (pageId) {
+        showPage(pageId);
+      }
+    }
   }
 });
 
@@ -218,6 +272,9 @@ function animate() {
       );
     });
   });
+
+  // Always update hover state per frame
+  updateHoverState();
 
   renderer.render(scene, camera);
 }
