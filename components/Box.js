@@ -41,7 +41,7 @@ export function Box(
     );
 
     // draw text
-    ctx.font = `bold ${fontSize}px sans-serif`;
+    ctx.font = `${fontSize}px sans-serif`;
     ctx.fillStyle = color;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";

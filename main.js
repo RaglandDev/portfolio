@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { FontLoader } from "three/addons/loaders/FontLoader.js";
 import { setupScene } from "./util/setupScene.js";
 import { setupInteractions, setupBackButtons } from "./interactions.js";
 import {
@@ -11,15 +12,15 @@ import { hideAllPages } from "./util/fade.js";
 // === Configuration ===
 const CONFIG = {
   PAGE_LABELS: [
-    ["", 0],
-    ["", 0],
-    ["", 0],
-    ["", 0],
-    ["Projects", 58],
-    ["", 0],
-    ["", 0],
-    ["", 0],
-    ["", 0],
+    ["null", 58],
+    ["null", 58],
+    ["null", 58],
+    ["null", 58],
+    ["projects", 58],
+    ["null", 58],
+    ["null", 58],
+    ["null", 58],
+    ["null", 58],
   ],
   BACKGROUND_COLOR: "white",
   CUBE_OUTLINE_COLOR: "black",
@@ -62,7 +63,20 @@ document.getElementById("threejs-container").appendChild(renderer.domElement);
 
 export const pages = Array.from(document.querySelectorAll(".page"));
 
-init();
+const fontFace = new FontFace(
+  "Funnel Display",
+  'url("/fonts/funnel_display.ttf") format("truetype")'
+);
+fontFace
+  .load()
+  .then((loaded) => {
+    document.fonts.add(loaded);
+    return document.fonts.ready;
+  })
+  .then(() => {
+    init();
+  })
+  .catch((err) => console.error("Font load failed:", err));
 
 function init() {
   hideAllPages();
@@ -77,8 +91,6 @@ function init() {
   window.addEventListener("resize", () =>
     updateMatrixRotation(matricesGroup, state)
   );
-
-  animate();
 }
 
 // === Assign Page IDs and Click Tracking ===
@@ -137,6 +149,7 @@ function animate() {
 
   renderer.render(scene, camera);
 }
+animate();
 
 // === Helpers ===
 function easeRotation() {
