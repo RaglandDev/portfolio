@@ -11,11 +11,11 @@ import { hideAllPages } from "./util/fade.js";
 // === Configuration ===
 const CONFIG = {
   PAGE_LABELS: [
+    ["", 0],
+    ["", 0],
+    ["", 0],
+    ["", 0],
     ["Projects", 58],
-    ["", 0],
-    ["", 0],
-    ["", 0],
-    ["", 0],
     ["", 0],
     ["", 0],
     ["", 0],
@@ -25,7 +25,7 @@ const CONFIG = {
   CUBE_OUTLINE_COLOR: "black",
   CUBE_COLOR: "white",
   CUBE_EDGE_WIDTH: 2,
-  CUBE_SPACING: 4,
+  CUBE_SPACING: 4.5,
   MATRIX_SPACING: 15,
   FOV: 75,
   NEAR: 0.1,
