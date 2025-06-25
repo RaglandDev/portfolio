@@ -1,8 +1,8 @@
 import * as THREE from "three";
 import { setupScene } from "./util/setupScene.js";
-import { setupInteractions } from "./interactions.js";
+import { setupInteractions, setupBackButtons } from "./interactions.js";
 import { updateMatrixCubes } from "./util/updateMatrixCubes.js";
-import { fadeOverlayIn, fadeOverlayOut } from "./util/fade.js";
+import { hideAllPages } from "./util/fade.js";
 
 // === Configuration ===
 const CONFIG = {
@@ -41,8 +41,7 @@ const { scene, camera, renderer, matricesGroup } = setupScene(CONFIG);
 document.getElementById("threejs-container").appendChild(renderer.domElement);
 
 // === Page/Fade Elements ===
-const fadeOverlay = document.getElementById("fadeOverlay");
-const pages = Array.from(document.querySelectorAll(".page"));
+export const pages = Array.from(document.querySelectorAll(".page"));
 
 // === Initialize State ===
 hideAllPages();
@@ -74,33 +73,6 @@ function updateMatrixRotation() {
   const target = isMobile() ? 0 : -Math.PI / 4;
   matricesGroup.userData.targetRotationZ = target;
   state.rotated = !isMobile();
-}
-
-// === Fade and Page Helpers ===
-function hideAllPages() {
-  document.getElementById("threejs-container").style.display = "block";
-  pages.forEach((p) => p.classList.remove("visible"));
-}
-
-async function hidePagesAndShowThreeJS() {
-  fadeOverlay.classList.add("fast-fade");
-  await fadeOverlayIn(fadeOverlay);
-
-  hideAllPages();
-  await fadeOverlayOut(fadeOverlay);
-
-  fadeOverlay.classList.remove("fast-fade");
-  document.body.classList.remove("page-visible");
-}
-
-// === Back Button Events ===
-function setupBackButtons() {
-  pages.forEach((page) => {
-    const backBtn = page.querySelector(".back-btn");
-    if (backBtn) {
-      backBtn.addEventListener("click", hidePagesAndShowThreeJS);
-    }
-  });
 }
 
 // === Hover Tracking: Update hoveredCenterCube and hoverStartTime ===

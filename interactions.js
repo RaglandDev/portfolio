@@ -1,5 +1,7 @@
 import * as THREE from "three";
 import { fadeOverlayIn, fadeOverlayOut } from "./util/fade.js";
+import { pages } from "./main.js";
+import { hidePagesAndShowThreeJS } from "./util/fade.js";
 
 export function setupInteractions(
   state,
@@ -239,6 +241,15 @@ export function setupInteractions(
           });
         }
       }
+    }
+  });
+}
+
+export function setupBackButtons() {
+  pages.forEach((page) => {
+    const backBtn = page.querySelector(".back-btn");
+    if (backBtn) {
+      backBtn.addEventListener("click", hidePagesAndShowThreeJS);
     }
   });
 }
