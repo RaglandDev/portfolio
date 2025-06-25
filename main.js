@@ -39,24 +39,37 @@ export const state = {
   rotated: true,
 };
 
-// === Setup Scene ===
+// === Utility ===
+export function isMobile() {
+  return window.innerWidth < CONFIG.MOBILE_BREAKPOINT;
+}
+
+// === Scene Initialization ===
 const { scene, camera, renderer, matricesGroup } = setupScene(CONFIG);
 document.getElementById("threejs-container").appendChild(renderer.domElement);
 
-// === Page/Fade Elements ===
 export const pages = Array.from(document.querySelectorAll(".page"));
 
-// === Initialize State ===
-hideAllPages();
-assignPageIdsToCenterCubes();
-setupBackButtons();
-setupInteractions(state, camera, matricesGroup, renderer, () => {
-  if (isMobile()) state.hoveredMatrix = null;
-});
-updateMatrixRotation(matricesGroup, state);
-window.addEventListener("resize", updateMatrixRotation);
+init();
 
-// === Assign Page IDs and 'clicks' property to Matrix Center Cubes ===
+function init() {
+  hideAllPages();
+  assignPageIdsToCenterCubes();
+  setupBackButtons();
+
+  setupInteractions(state, camera, matricesGroup, renderer, () => {
+    if (isMobile()) state.hoveredMatrix = null;
+  });
+
+  updateMatrixRotation(matricesGroup, state);
+  window.addEventListener("resize", () =>
+    updateMatrixRotation(matricesGroup, state)
+  );
+
+  animate();
+}
+
+// === Assign Page IDs and Click Tracking ===
 function assignPageIdsToCenterCubes() {
   matricesGroup.children.forEach((matrix, i) => {
     const centerCube = matrix.children.find((c) => c.userData?.isCenter);
@@ -67,72 +80,39 @@ function assignPageIdsToCenterCubes() {
   });
 }
 
-export function isMobile() {
-  return window.innerWidth < CONFIG.MOBILE_BREAKPOINT;
-}
-
-// === Hover Tracking: Update hoveredCenterCube and hoverStartTime ===
+// === Hover Tracking ===
 function updateHoverState() {
   const matrix = state.hoveredMatrix;
-  if (!matrix) {
-    state.hoveredCenterCube = null;
-    state.hoverStartTime = 0;
-    return;
-  }
+  const centerCube = matrix?.children.find((c) => c.userData?.isCenter);
 
-  const centerCube = matrix.children.find((c) => c.userData?.isCenter);
-  if (!centerCube) {
-    state.hoveredCenterCube = null;
-    state.hoverStartTime = 0;
-    return;
-  }
-
-  if (state.hoveredCenterCube !== centerCube) {
+  if (centerCube && state.hoveredCenterCube !== centerCube) {
     state.hoveredCenterCube = centerCube;
     state.hoverStartTime = performance.now();
+  } else if (!centerCube) {
+    state.hoveredCenterCube = null;
+    state.hoverStartTime = 0;
   }
 }
 
-// === Rotation Inertia ===
+// === Inertia for Rotation ===
 function applyInertia() {
   const FRICTION = 0.98;
 
   if (!state.isDragging && !state.idle) {
-    if (Math.abs(state.velocityX) > 0.0001) {
-      matricesGroup.rotation.x += state.velocityX;
-      state.velocityX *= FRICTION;
-    } else {
-      state.velocityX = 0;
-    }
-
-    if (Math.abs(state.velocityY) > 0.0001) {
-      matricesGroup.rotation.y += state.velocityY;
-      state.velocityY *= FRICTION;
-    } else {
-      state.velocityY = 0;
-    }
+    ["velocityX", "velocityY"].forEach((axis) => {
+      if (Math.abs(state[axis]) > 0.0001) {
+        const rotAxis = axis === "velocityX" ? "x" : "y";
+        matricesGroup.rotation[rotAxis] += state[axis];
+        state[axis] *= FRICTION;
+      } else {
+        state[axis] = 0;
+      }
+    });
   }
 }
 
-// === Animate ===
-function animate() {
-  requestAnimationFrame(animate);
-
-  const isOnMobile = isMobile();
-  applyInertia();
-
-  // Smooth Z rotation
-  const targetZ = matricesGroup.userData.targetRotationZ ?? -Math.PI / 4;
-  matricesGroup.rotation.z += (targetZ - matricesGroup.rotation.z) * 0.1;
-
-  // Ease X/Y rotation to neutral
-  matricesGroup.rotation.x += (0 - matricesGroup.rotation.x) * 0.02;
-  matricesGroup.rotation.y += (0 - matricesGroup.rotation.y) * 0.02;
-
-  // Cube matrix updates
-  updateMatrixCubes(state, matricesGroup, camera, isOnMobile);
-
-  // Scale red center cubes differently for mobile
+// === Red Center Cube Scaling ===
+function scaleCenterCubes(isOnMobile) {
   matricesGroup.children.forEach((matrix) => {
     matrix.children.forEach((cubeGroup) => {
       if (!cubeGroup.userData.isCenter) return;
@@ -152,11 +132,30 @@ function animate() {
       );
     });
   });
+}
 
-  // Always update hover state per frame
+// === Animation Loop ===
+function animate() {
+  requestAnimationFrame(animate);
+
+  const isOnMobile = isMobile();
+
+  applyInertia();
+  easeRotation();
+  updateMatrixCubes(state, matricesGroup, camera, isOnMobile);
+  scaleCenterCubes(isOnMobile);
   updateHoverState();
 
   renderer.render(scene, camera);
 }
 
-animate();
+// === Helpers ===
+function easeRotation() {
+  // Z Rotation
+  const targetZ = matricesGroup.userData.targetRotationZ ?? -Math.PI / 4;
+  matricesGroup.rotation.z += (targetZ - matricesGroup.rotation.z) * 0.1;
+
+  // Neutralize X and Y
+  matricesGroup.rotation.x += (0 - matricesGroup.rotation.x) * 0.02;
+  matricesGroup.rotation.y += (0 - matricesGroup.rotation.y) * 0.02;
+}
