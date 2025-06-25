@@ -82,19 +82,6 @@ function hideAllPages() {
   pages.forEach((p) => p.classList.remove("visible"));
 }
 
-async function showPage(pageId) {
-  await fadeOverlayIn(fadeOverlay);
-
-  document.getElementById("threejs-container").style.display = "none";
-  pages.forEach((p) => p.classList.remove("visible"));
-
-  const page = document.getElementById(pageId);
-  if (page) page.classList.add("visible");
-
-  document.body.classList.add("page-visible");
-  await fadeOverlayOut(fadeOverlay);
-}
-
 async function hidePagesAndShowThreeJS() {
   fadeOverlay.classList.add("fast-fade");
   await fadeOverlayIn(fadeOverlay);
