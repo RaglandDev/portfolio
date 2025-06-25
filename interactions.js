@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { fadeOverlayIn, fadeOverlayOut } from "./util/fade.js";
-import { pages } from "./main.js";
+import { pages, isMobile } from "./main.js";
 import { hidePagesAndShowThreeJS } from "./util/fade.js";
 
 export function setupInteractions(
@@ -165,9 +165,7 @@ export function setupInteractions(
 
   // === Add this inside setupInteractions ===
   renderer.domElement.addEventListener("click", (event) => {
-    const isMobile = window.innerWidth < 600;
-
-    if (!isMobile) {
+    if (!isMobile()) {
       const matrix = state.hoveredMatrix;
       if (!matrix) return;
 

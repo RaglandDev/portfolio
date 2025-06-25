@@ -64,8 +64,7 @@ function assignPageIdsToCenterCubes() {
   });
 }
 
-// === Responsive Helpers ===
-function isMobile() {
+export function isMobile() {
   return window.innerWidth < CONFIG.MOBILE_BREAKPOINT;
 }
 
