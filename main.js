@@ -47,7 +47,7 @@ export const state = {
   hoveredMatrix: null,
   hoveredCenterCube: null,
   hoverStartTime: 0,
-  hoverThresholdMs: 500,
+  hoverThresholdMs: 250,
   rotated: true,
 };
 
