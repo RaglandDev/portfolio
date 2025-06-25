@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { setupScene } from "./util/setupScene.js";
 import { setupInteractions } from "./interactions.js";
 import { updateMatrixCubes } from "./util/updateMatrixCubes.js";
+import { fadeOverlayIn, fadeOverlayOut } from "./util/fade.js";
 
 // === Configuration ===
 const CONFIG = {
@@ -81,24 +82,8 @@ function hideAllPages() {
   pages.forEach((p) => p.classList.remove("visible"));
 }
 
-function fadeOverlayIn() {
-  return new Promise((resolve) => {
-    fadeOverlay.style.opacity = "1";
-    fadeOverlay.style.pointerEvents = "auto";
-    fadeOverlay.addEventListener("transitionend", resolve, { once: true });
-  });
-}
-
-function fadeOverlayOut() {
-  return new Promise((resolve) => {
-    fadeOverlay.style.opacity = "0";
-    fadeOverlay.style.pointerEvents = "none";
-    fadeOverlay.addEventListener("transitionend", resolve, { once: true });
-  });
-}
-
 async function showPage(pageId) {
-  await fadeOverlayIn();
+  await fadeOverlayIn(fadeOverlay);
 
   document.getElementById("threejs-container").style.display = "none";
   pages.forEach((p) => p.classList.remove("visible"));
@@ -107,15 +92,15 @@ async function showPage(pageId) {
   if (page) page.classList.add("visible");
 
   document.body.classList.add("page-visible");
-  await fadeOverlayOut();
+  await fadeOverlayOut(fadeOverlay);
 }
 
 async function hidePagesAndShowThreeJS() {
   fadeOverlay.classList.add("fast-fade");
-  await fadeOverlayIn();
+  await fadeOverlayIn(fadeOverlay);
 
   hideAllPages();
-  await fadeOverlayOut();
+  await fadeOverlayOut(fadeOverlay);
 
   fadeOverlay.classList.remove("fast-fade");
   document.body.classList.remove("page-visible");
