@@ -138,66 +138,6 @@ function updateHoverState() {
   }
 }
 
-// === Click Interaction: Navigate if hovered >= 0.5s and clicked on same cube ===
-renderer.domElement.addEventListener("click", (event) => {
-  // On desktop, rely on hoveredMatrix and hover time.
-  if (!isMobile()) {
-    const matrix = state.hoveredMatrix;
-    if (!matrix) return;
-
-    const centerCube = matrix.children.find((c) => c.userData?.isCenter);
-    if (!centerCube) return;
-
-    updateHoverState();
-
-    if (centerCube !== state.hoveredCenterCube) {
-      // Clicked cube not same as hovered cube, ignore
-      return;
-    }
-
-    const hoverDuration = performance.now() - state.hoverStartTime;
-    if (hoverDuration >= state.hoverThresholdMs) {
-      const pageId = centerCube.userData.pageId;
-      if (pageId) {
-        showPage(pageId);
-        state.hoveredCenterCube = null;
-        state.hoverStartTime = 0;
-      }
-    }
-  } else {
-    // Mobile: find intersected center cube from pointer position and navigate immediately.
-
-    // Use raycaster to get intersected cube under click
-    const mouse = new THREE.Vector2();
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(mouse, camera);
-
-    // Collect all center cube meshes for raycast
-    const centerMeshes = [];
-    matricesGroup.children.forEach((matrix) => {
-      const centerCube = matrix.children.find((c) => c.userData?.isCenter);
-      if (centerCube) {
-        const mesh = centerCube.children.find((c) => c instanceof THREE.Mesh);
-        if (mesh) centerMeshes.push(mesh);
-      }
-    });
-
-    const intersects = raycaster.intersectObjects(centerMeshes, false);
-    if (intersects.length > 0) {
-      const mesh = intersects[0].object;
-      const centerCube = mesh.parent; // The group holding mesh
-
-      const pageId = centerCube.userData.pageId;
-      if (pageId) {
-        showPage(pageId);
-      }
-    }
-  }
-});
-
 // === Rotation Inertia ===
 function applyInertia() {
   const FRICTION = 0.98;

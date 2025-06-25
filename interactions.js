@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { fadeOverlayIn, fadeOverlayOut } from "./util/fade.js";
 
 export function setupInteractions(
   state,
@@ -158,5 +159,86 @@ export function setupInteractions(
 
   window.addEventListener("touchcancel", () => {
     state.isDragging = false;
+  });
+
+  // === Add this inside setupInteractions ===
+  renderer.domElement.addEventListener("click", (event) => {
+    const isMobile = window.innerWidth < 600;
+
+    if (!isMobile) {
+      const matrix = state.hoveredMatrix;
+      if (!matrix) return;
+
+      const centerCube = matrix.children.find((c) => c.userData?.isCenter);
+      if (!centerCube) return;
+
+      const now = performance.now();
+      if (state.hoveredCenterCube !== centerCube) {
+        state.hoveredCenterCube = centerCube;
+        state.hoverStartTime = now;
+        return;
+      }
+
+      const hoverDuration = now - state.hoverStartTime;
+      if (hoverDuration >= state.hoverThresholdMs) {
+        const pageId = centerCube.userData.pageId;
+        if (pageId) {
+          const fadeOverlay = document.getElementById("fadeOverlay");
+          const pages = Array.from(document.querySelectorAll(".page"));
+          const container = document.getElementById("threejs-container");
+
+          fadeOverlayIn(fadeOverlay).then(() => {
+            container.style.display = "none";
+            pages.forEach((p) => p.classList.remove("visible"));
+            const page = document.getElementById(pageId);
+            if (page) page.classList.add("visible");
+            document.body.classList.add("page-visible");
+            fadeOverlayOut(fadeOverlay);
+          });
+
+          state.hoveredCenterCube = null;
+          state.hoverStartTime = 0;
+        }
+      }
+    } else {
+      // Mobile raycast
+      const mouse = new THREE.Vector2();
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(mouse, camera);
+
+      const centerMeshes = [];
+      matricesGroup.children.forEach((matrix) => {
+        const centerCube = matrix.children.find((c) => c.userData?.isCenter);
+        if (centerCube) {
+          const mesh = centerCube.children.find((c) => c instanceof THREE.Mesh);
+          if (mesh) centerMeshes.push(mesh);
+        }
+      });
+
+      const intersects = raycaster.intersectObjects(centerMeshes, false);
+      if (intersects.length > 0) {
+        const mesh = intersects[0].object;
+        const centerCube = mesh.parent;
+        const pageId = centerCube.userData.pageId;
+
+        if (pageId) {
+          const fadeOverlay = document.getElementById("fadeOverlay");
+          const pages = Array.from(document.querySelectorAll(".page"));
+          const container = document.getElementById("threejs-container");
+
+          fadeOverlayIn(fadeOverlay).then(() => {
+            container.style.display = "none";
+            pages.forEach((p) => p.classList.remove("visible"));
+            const page = document.getElementById(pageId);
+            if (page) page.classList.add("visible");
+            document.body.classList.add("page-visible");
+            fadeOverlayOut(fadeOverlay);
+          });
+        }
+      }
+    }
   });
 }
