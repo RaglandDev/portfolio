@@ -4,6 +4,7 @@ import { setupInteractions, setupBackButtons } from "./interactions.js";
 import {
   updateMatrixCubes,
   updateMatrixRotation,
+  scaleCenterCubes,
 } from "./util/updateMatrixCubes.js";
 import { hideAllPages } from "./util/fade.js";
 
@@ -111,29 +112,6 @@ function applyInertia() {
   }
 }
 
-// === Red Center Cube Scaling ===
-function scaleCenterCubes(isOnMobile) {
-  matricesGroup.children.forEach((matrix) => {
-    matrix.children.forEach((cubeGroup) => {
-      if (!cubeGroup.userData.isCenter) return;
-
-      const mesh = cubeGroup.children.find((c) => c instanceof THREE.Mesh);
-      if (!mesh) return;
-
-      const isRed = mesh.material.color.equals(new THREE.Color("red"));
-      const targetScale =
-        isRed && isOnMobile
-          ? CONFIG.CENTER_SCALE_MOBILE
-          : CONFIG.CENTER_SCALE_NORMAL;
-
-      cubeGroup.scale.lerp(
-        new THREE.Vector3(targetScale, targetScale, targetScale),
-        CONFIG.SCALE_LERP_SPEED
-      );
-    });
-  });
-}
-
 // === Animation Loop ===
 function animate() {
   requestAnimationFrame(animate);
@@ -143,7 +121,7 @@ function animate() {
   applyInertia();
   easeRotation();
   updateMatrixCubes(state, matricesGroup, camera, isOnMobile);
-  scaleCenterCubes(isOnMobile);
+  scaleCenterCubes(CONFIG, matricesGroup, isOnMobile);
   updateHoverState();
 
   renderer.render(scene, camera);

@@ -146,3 +146,26 @@ export function updateMatrixRotation(matricesGroup, state) {
   matricesGroup.userData.targetRotationZ = target;
   state.rotated = !isMobile();
 }
+
+// === Red Center Cube Scaling ===
+export function scaleCenterCubes(CONFIG, matricesGroup, isOnMobile) {
+  matricesGroup.children.forEach((matrix) => {
+    matrix.children.forEach((cubeGroup) => {
+      if (!cubeGroup.userData.isCenter) return;
+
+      const mesh = cubeGroup.children.find((c) => c instanceof THREE.Mesh);
+      if (!mesh) return;
+
+      const isRed = mesh.material.color.equals(new THREE.Color("red"));
+      const targetScale =
+        isRed && isOnMobile
+          ? CONFIG.CENTER_SCALE_MOBILE
+          : CONFIG.CENTER_SCALE_NORMAL;
+
+      cubeGroup.scale.lerp(
+        new THREE.Vector3(targetScale, targetScale, targetScale),
+        CONFIG.SCALE_LERP_SPEED
+      );
+    });
+  });
+}
