@@ -1,7 +1,10 @@
 import * as THREE from "three";
 import { setupScene } from "./util/setupScene.js";
 import { setupInteractions, setupBackButtons } from "./interactions.js";
-import { updateMatrixCubes } from "./util/updateMatrixCubes.js";
+import {
+  updateMatrixCubes,
+  updateMatrixRotation,
+} from "./util/updateMatrixCubes.js";
 import { hideAllPages } from "./util/fade.js";
 
 // === Configuration ===
@@ -23,7 +26,7 @@ const CONFIG = {
 };
 
 // === Global State ===
-const state = {
+export const state = {
   isDragging: false,
   previousMousePosition: { x: 0, y: 0 },
   velocityX: 0,
@@ -50,7 +53,7 @@ setupBackButtons();
 setupInteractions(state, camera, matricesGroup, renderer, () => {
   if (isMobile()) state.hoveredMatrix = null;
 });
-updateMatrixRotation();
+updateMatrixRotation(matricesGroup, state);
 window.addEventListener("resize", updateMatrixRotation);
 
 // === Assign Page IDs and 'clicks' property to Matrix Center Cubes ===
@@ -66,12 +69,6 @@ function assignPageIdsToCenterCubes() {
 
 export function isMobile() {
   return window.innerWidth < CONFIG.MOBILE_BREAKPOINT;
-}
-
-function updateMatrixRotation() {
-  const target = isMobile() ? 0 : -Math.PI / 4;
-  matricesGroup.userData.targetRotationZ = target;
-  state.rotated = !isMobile();
 }
 
 // === Hover Tracking: Update hoveredCenterCube and hoverStartTime ===

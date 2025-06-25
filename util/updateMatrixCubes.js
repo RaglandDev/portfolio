@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { isMobile } from "../main.js";
 
 export function updateMatrixCubes(state, matricesGroup, camera, isMobile) {
   const CONFIG = {
@@ -138,4 +139,10 @@ function handleDesktopCube(cube, matrix, state, camera, CONFIG) {
     cube.rotation.x += cube.userData.rotationSpeed?.x ?? DEFAULT_ROTATION_SPEED;
     cube.rotation.y += cube.userData.rotationSpeed?.y ?? DEFAULT_ROTATION_SPEED;
   }
+}
+
+export function updateMatrixRotation(matricesGroup, state) {
+  const target = isMobile() ? 0 : -Math.PI / 4;
+  matricesGroup.userData.targetRotationZ = target;
+  state.rotated = !isMobile();
 }
