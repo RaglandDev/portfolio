@@ -10,6 +10,17 @@ import { hideAllPages } from "./util/fade.js";
 
 // === Configuration ===
 const CONFIG = {
+  PAGE_LABELS: [
+    ["Projects", 58],
+    ["", 0],
+    ["", 0],
+    ["", 0],
+    ["", 0],
+    ["", 0],
+    ["", 0],
+    ["", 0],
+    ["", 0],
+  ],
   BACKGROUND_COLOR: "white",
   CUBE_OUTLINE_COLOR: "black",
   CUBE_COLOR: "white",
@@ -121,7 +132,7 @@ function animate() {
   applyInertia();
   easeRotation();
   updateMatrixCubes(state, matricesGroup, camera, isOnMobile);
-  scaleCenterCubes(CONFIG, matricesGroup, isOnMobile);
+  scaleCenterCubes(CONFIG, matricesGroup, isOnMobile, camera);
   updateHoverState();
 
   renderer.render(scene, camera);

@@ -6,8 +6,8 @@ export function updateMatrixCubes(state, matricesGroup, camera, isMobile) {
     EXPLODE_THRESHOLD: 0.07,
     MAX_EXPLODE_STRENGTH: 100,
     HOVER_EXPLODE_PUSH: 3,
-    CENTER_HOVER_SCALE: 3,
-    CENTER_NORMAL_SCALE: 1,
+    CENTER_HOVER_SCALE: 10,
+    CENTER_NORMAL_SCALE: 5,
     SCALE_LERP_SPEED: 0.1,
     POSITION_LERP_SPEED: 0.07,
     IDLE_VELOCITY_MAGNITUDE: 40,
@@ -101,6 +101,7 @@ function handleDesktopCube(cube, matrix, state, camera, CONFIG) {
 
   if (!state.idle) {
     if (matrix === state.hoveredMatrix && isCenter) {
+      cube.rotation.z = Math.PI / 4; // Rotate 45 degrees around Y axis
       cube.scale.lerp(
         new THREE.Vector3(
           CENTER_HOVER_SCALE,
@@ -148,7 +149,7 @@ export function updateMatrixRotation(matricesGroup, state) {
 }
 
 // === Red Center Cube Scaling ===
-export function scaleCenterCubes(CONFIG, matricesGroup, isOnMobile) {
+export function scaleCenterCubes(CONFIG, matricesGroup, isOnMobile, camera) {
   matricesGroup.children.forEach((matrix) => {
     matrix.children.forEach((cubeGroup) => {
       if (!cubeGroup.userData.isCenter) return;
@@ -156,7 +157,8 @@ export function scaleCenterCubes(CONFIG, matricesGroup, isOnMobile) {
       const mesh = cubeGroup.children.find((c) => c instanceof THREE.Mesh);
       if (!mesh) return;
 
-      const isRed = mesh.material.color.equals(new THREE.Color("red"));
+      const isRed = mesh.userData.color?.equals(new THREE.Color("red"));
+
       const targetScale =
         isRed && isOnMobile
           ? CONFIG.CENTER_SCALE_MOBILE
@@ -166,6 +168,14 @@ export function scaleCenterCubes(CONFIG, matricesGroup, isOnMobile) {
         new THREE.Vector3(targetScale, targetScale, targetScale),
         CONFIG.SCALE_LERP_SPEED
       );
+
+      if (isRed && isOnMobile) {
+        // Make red center cube face the camera
+        const temp = new THREE.Object3D();
+        temp.position.copy(cubeGroup.position);
+        temp.lookAt(camera.position);
+        cubeGroup.quaternion.slerp(temp.quaternion, CONFIG.SCALE_LERP_SPEED);
+      }
     });
   });
 }

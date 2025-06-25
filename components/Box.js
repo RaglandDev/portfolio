@@ -4,31 +4,103 @@ import { LineMaterial } from "three/addons/lines/LineMaterial.js";
 import { LineGeometry } from "three/addons/lines/LineGeometry.js";
 
 /**
- * Creates a cube with an outline using LineSegments2.
- *
- * @param {string} boxColor - Fill color of the cube.
- * @param {string} edgeColor - Color of the wireframe edges.
- * @param {number} edgeWidth - Thickness of the wireframe edges.
- * @returns {THREE.Group} Group containing the cube mesh and its outline.
+ * @param {[string, number]} customText – [text, fontSize]
+ * @param {string} boxColor
+ * @param {string} edgeColor
+ * @param {number} edgeWidth
  */
-export function Box(boxColor = "black", edgeColor = "black", edgeWidth = 2) {
+export function Box(
+  customText = ["", 0],
+  boxColor = "black",
+  edgeColor = "black",
+  edgeWidth = 2
+) {
   const group = new THREE.Group();
   const size = 2;
   const half = size / 2;
 
-  // === Solid Cube ===
-  const geometry = new THREE.BoxGeometry(size, size, size);
-  const material = new THREE.MeshBasicMaterial({
-    color: boxColor,
-    polygonOffset: true,
-    polygonOffsetFactor: 1,
-    polygonOffsetUnits: 1,
-  });
-  const mesh = new THREE.Mesh(geometry, material);
-  group.add(mesh);
+  // --- make single shared label texture (with border) ---
+  function makeLabelTexture([text, fontSize], bg, color) {
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 256;
+    const ctx = canvas.getContext("2d");
 
-  // === Wireframe Outline ===
-  const vertices = [
+    // fill background
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, 256, 256);
+
+    // draw border
+    const borderWidth = 8;
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = borderWidth;
+    ctx.strokeRect(
+      borderWidth / 2,
+      borderWidth / 2,
+      256 - borderWidth,
+      256 - borderWidth
+    );
+
+    // draw text
+    ctx.font = `bold ${fontSize}px sans-serif`;
+    ctx.fillStyle = color;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, 128, 128);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.needsUpdate = true;
+    return tex;
+  }
+  const labelTex = makeLabelTexture(customText, boxColor, "black");
+
+  // --- cube faces (with built-in label) ---
+  const faceMatOpts = {
+    map: labelTex,
+    polygonOffset: true,
+  };
+  const faceMaterials = Array(6)
+    .fill()
+    .map(() => new THREE.MeshBasicMaterial(faceMatOpts));
+
+  const cube = new THREE.Mesh(
+    new THREE.BoxGeometry(size, size, size),
+    faceMaterials
+  );
+  cube.userData.color = new THREE.Color(boxColor);
+  group.add(cube);
+
+  // --- floating label planes (just in case) ---
+  const planeMat = new THREE.MeshBasicMaterial({
+    map: labelTex,
+    transparent: true,
+    depthTest: false, // always render on top of faces
+  });
+  const labelPositions = [
+    [half + 0.0, 0, 0],
+    [-half - 0.0, 0, 0],
+    [0, half + 0.0, 0],
+    [0, -half - 0.0, 0],
+    [0, 0, half + 0.0],
+    [0, 0, -half - 0.0],
+  ];
+  const labelRotations = [
+    [0, Math.PI / 2, 0],
+    [0, -Math.PI / 2, 0],
+    [-Math.PI / 2, 0, 0],
+    [Math.PI / 2, 0, 0],
+    [0, 0, 0],
+    [0, Math.PI, 0],
+  ];
+  for (let i = 0; i < 6; i++) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(size, size), planeMat);
+    m.position.set(...labelPositions[i]);
+    m.rotation.set(...labelRotations[i]);
+    m.renderOrder = 500; // draw after the cube itself
+    group.add(m);
+  }
+
+  // --- wireframe outline (always on top) ---
+  const verts = [
     [-half, -half, -half],
     [half, -half, -half],
     [half, half, -half],
@@ -38,7 +110,6 @@ export function Box(boxColor = "black", edgeColor = "black", edgeWidth = 2) {
     [half, half, half],
     [-half, half, half],
   ];
-
   const edges = [
     [0, 1],
     [1, 2],
@@ -53,22 +124,23 @@ export function Box(boxColor = "black", edgeColor = "black", edgeWidth = 2) {
     [2, 6],
     [3, 7],
   ];
+  const pos = edges.flatMap(([a, b]) => [...verts[a], ...verts[b]]);
+  const lineGeo = new LineGeometry();
+  lineGeo.setPositions(pos);
 
-  const positions = edges.flatMap(([a, b]) => [...vertices[a], ...vertices[b]]);
-
-  const lineGeometry = new LineGeometry();
-  lineGeometry.setPositions(positions);
-
-  const lineMaterial = new LineMaterial({
+  const lineMat = new LineMaterial({
     color: edgeColor,
     linewidth: edgeWidth,
+    depthTest: false, // always visible
+    depthWrite: false,
   });
+  lineMat.resolution.set(window.innerWidth, window.innerHeight);
 
-  const outline = new LineSegments2(lineGeometry, lineMaterial);
+  const outline = new LineSegments2(lineGeo, lineMat);
+  outline.renderOrder = 999; // last thing
   group.add(outline);
 
-  // === Metadata ===
-  group.userData.lineMaterial = lineMaterial;
+  // --- rotation speeds ---
   group.userData.rotationSpeed = {
     x: (Math.random() - 0.5) * 0.004,
     y: (Math.random() - 0.5) * 0.004,

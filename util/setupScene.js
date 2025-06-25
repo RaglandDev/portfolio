@@ -36,9 +36,11 @@ function createMatricesGroup(config) {
   const group = new THREE.Group();
   group.rotation.z = -Math.PI / 4;
 
+  let pageLabelsIndex = 0;
   for (let i = 0; i < 3; i++) {
     for (let j = 0; j < 3; j++) {
       const matrix = Matrix3D(
+        config.PAGE_LABELS[pageLabelsIndex],
         config.CUBE_SPACING,
         config.CUBE_OUTLINE_COLOR,
         config.CUBE_COLOR,
@@ -50,6 +52,7 @@ function createMatricesGroup(config) {
         0
       );
       group.add(matrix);
+      pageLabelsIndex += 1;
     }
   }
 

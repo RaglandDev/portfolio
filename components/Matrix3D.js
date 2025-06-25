@@ -12,6 +12,7 @@ import { Box } from "./Box.js";
  * @returns {THREE.Group} Group containing the matrix of cubes and a raycast target.
  */
 export function Matrix3D(
+  pageLabel,
   spacing = 4,
   edgeColor = "black",
   boxColor = "white",
@@ -37,7 +38,7 @@ export function Matrix3D(
 
         const isCenter = x === CENTER && y === CENTER && z === CENTER;
         const cubeColor = isCenter ? "red" : boxColor;
-        const cube = Box(cubeColor, edgeColor, edgeWidth);
+        const cube = Box(pageLabel, cubeColor, edgeColor, edgeWidth);
         cube.position.copy(position);
 
         // Animation metadata
