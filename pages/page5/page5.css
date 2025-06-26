@@ -1,24 +1,25 @@
 .project-navbar {
   width: 100%;
   background-color: white;
-  height: 3.5rem; /* or whatever height you want */
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 1rem;
+  padding: 2rem 0;
   flex-wrap: wrap;
 }
 
 .project-btn {
-  background: white;
+  width: 260px;
+  text-align: center;
+  padding: 1rem 0;
+  font-size: 1.2rem;
   color: black;
-  border: none;
-  height: 100%;
-  padding: 0 1.5rem; 
-  font-size: 1rem;
+  background-color: white;
+  border: 2px solid black;
+  user-select: none;
   cursor: none;
   transition: background-color 0.25s, color 0.25s;
-  user-select: none;
 }
 
 .project-btn:hover {
@@ -30,6 +31,7 @@
   background-color: black;
   color: white;
 }
+
 
 .project-item {
   display: none;

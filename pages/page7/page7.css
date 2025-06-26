@@ -1,4 +1,4 @@
-.link-button-container {
+.contact-info-container {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -9,7 +9,7 @@
   background-color: white;
 }
 
-.link-button {
+.contact-item {
   width: 260px;
   text-align: center;
   padding: 1rem 0;
@@ -17,13 +17,6 @@
   color: black;
   background-color: white;
   border: 2px solid black;
-  text-decoration: none;
-  user-select: none;
+  user-select: text;
   cursor: none;
-  transition: background-color 0.25s, color 0.25s;
-}
-
-.link-button:hover {
-  background-color: black;
-  color: white;
 }
