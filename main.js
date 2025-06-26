@@ -62,21 +62,7 @@ const { scene, camera, renderer, matricesGroup } = setupScene(CONFIG);
 document.getElementById("threejs-container").appendChild(renderer.domElement);
 
 export const pages = Array.from(document.querySelectorAll(".page"));
-
-const fontFace = new FontFace(
-  "Funnel Display",
-  'url("/fonts/funnel_display.ttf") format("truetype")'
-);
-fontFace
-  .load()
-  .then((loaded) => {
-    document.fonts.add(loaded);
-    return document.fonts.ready;
-  })
-  .then(() => {
-    init();
-  })
-  .catch((err) => console.error("Font load failed:", err));
+init();
 
 function init() {
   hideAllPages();
