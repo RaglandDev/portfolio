@@ -8,6 +8,7 @@ export function initPage5() {
       btn.classList.add("active");
 
       const id = btn.dataset.id;
+      console.log(id);
       items.forEach((item) => {
         item.classList.toggle("active", item.dataset.id === id);
       });
