@@ -63,7 +63,7 @@ document.getElementById("threejs-container").appendChild(renderer.domElement);
 
 export const pages = Array.from(document.querySelectorAll(".page"));
 init();
-
+//
 function init() {
   hideAllPages();
   assignPageIdsToCenterCubes();
