@@ -40,7 +40,7 @@ const CONFIG = {
   PAGE_LABELS: [
     ["", 58],
     ["", 58],
-    ["", 58],
+    ["links", 58],
     ["", 58],
     ["projects", 58],
     ["", 58],

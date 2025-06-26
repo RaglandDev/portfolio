@@ -1,0 +1,31 @@
+.link-button-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  padding-top: 2rem;
+  padding-bottom: 4rem;
+  background-color: white;
+}
+
+.link-button {
+  background-color: black;
+  color: white;
+  text-decoration: none;
+  width: 220px; /* fixed width */
+  text-align: center;
+  padding: 1rem 0;
+  font-size: 1.2rem;
+  border: none;
+  border-radius: 0;
+  cursor: none;
+  transition: background-color 0.25s, color 0.25s;
+  user-select: none;
+}
+
+.link-button:hover {
+  background-color: white;
+  color: black;
+  outline: 2px solid black;
+}
