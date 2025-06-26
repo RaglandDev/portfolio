@@ -22,47 +22,6 @@
     <div id="threejs-container"></div>
     <div id="fadeOverlay"></div>
     <div id="pages-container"></div>
-
-    <template id="page-template">
-      <div class="page">
-        <button class="back-btn" aria-label="Back">
-          <svg
-            width="48"
-            height="48"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M15 18L9 12L15 6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
-        <h1 class="page-title"></h1>
-        <p class="page-content"></p>
-      </div>
-    </template>
-
     <script type="module" src="main.js"></script>
-    <script>
-      // Dynamically create pages 1–9
-      const container = document.getElementById("pages-container");
-      const template = document.getElementById("page-template");
-
-      for (let i = 1; i <= 9; i++) {
-        const clone = template.content.cloneNode(true);
-        const pageDiv = clone.querySelector(".page");
-        pageDiv.id = `page${i}`;
-        clone.querySelector(".page-title").textContent = `Page ${i} Content`;
-        clone.querySelector(
-          ".page-content"
-        ).textContent = `This is the content for page ${i}.`;
-        container.appendChild(clone);
-      }
-    </script>
   </body>
 </html>

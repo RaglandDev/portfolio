@@ -9,6 +9,30 @@ import {
 } from "./util/updateMatrixCubes.js";
 import { hideAllPages } from "./util/fade.js";
 
+const pageIds = Array.from({ length: 9 }, (_, i) => `page${i + 1}`);
+const container = document.getElementById("pages-container");
+
+async function loadPages() {
+  for (const id of pageIds) {
+    const res = await fetch(`./pages/${id}.html`);
+    const text = await res.text();
+
+    // Create a DOM element to parse the template
+    const temp = document.createElement("div");
+    temp.innerHTML = text;
+
+    const template = temp.querySelector("template");
+    if (template) {
+      const content = template.content.cloneNode(true);
+      container.appendChild(content);
+    } else {
+      console.warn(`No template found in ${id}.html`);
+    }
+  }
+}
+
+await loadPages();
+
 // === Configuration ===
 const CONFIG = {
   PAGE_LABELS: [
