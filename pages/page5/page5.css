@@ -1,0 +1,49 @@
+.project-navbar {
+  display: flex;
+  gap: 1rem;
+  margin: 2rem 0;
+  flex-wrap: wrap;
+}
+
+.project-btn {
+  background: none;
+  border: 2px solid #007bff;
+  color: #007bff;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  cursor: none;
+  transition: background-color 0.25s, color 0.25s;
+  user-select: none;
+}
+
+.project-btn:hover {
+  background-color: #007bff;
+  color: white;
+}
+
+.project-btn.active {
+  background-color: #0056b3;
+  color: white;
+  border-color: #0056b3;
+}
+
+.project-item {
+  display: none;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.project-item.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

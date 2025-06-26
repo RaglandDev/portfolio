@@ -1,0 +1,44 @@
+<template>
+  <div class="page" id="page5">
+    <button class="back-btn" aria-label="Back">
+      <svg
+        width="48"
+        height="48"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M15 18L9 12L15 6"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+    <h1 class="page-title">Projects</h1>
+    <script type="module" src="page5.js"></script>
+
+    <div class="project-navbar">
+      <button class="project-btn active" data-id="proj1">Project 1</button>
+      <button class="project-btn" data-id="proj2">Project 2</button>
+      <button class="project-btn" data-id="proj3">Project 3</button>
+    </div>
+
+    <div class="project-display" id="project-display">
+      <div class="project-item active" data-id="proj1">
+        <h2>Project 1</h2>
+        <p>body</p>
+      </div>
+      <div class="project-item" data-id="proj2">
+        <h2>Project 2</h2>
+        <p>body</p>
+      </div>
+      <div class="project-item" data-id="proj3">
+        <h2>Project 3</h2>
+        <p>body</p>
+      </div>
+    </div>
+  </div>
+</template>

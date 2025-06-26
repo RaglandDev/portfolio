@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { FontLoader } from "three/addons/loaders/FontLoader.js";
 import { setupScene } from "./util/setupScene.js";
 import { setupInteractions, setupBackButtons } from "./interactions.js";
+import { initPage5 } from "./pages/page5/page5.js";
 import {
   updateMatrixCubes,
   updateMatrixRotation,
@@ -14,7 +15,7 @@ const container = document.getElementById("pages-container");
 
 async function loadPages() {
   for (const id of pageIds) {
-    const res = await fetch(`./pages/${id}.html`);
+    const res = await fetch(`./pages/${id}/${id}.html`);
     const text = await res.text();
 
     // Create a DOM element to parse the template
@@ -32,6 +33,7 @@ async function loadPages() {
 }
 
 await loadPages();
+initPage5();
 
 // === Configuration ===
 const CONFIG = {
