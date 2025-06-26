@@ -36,15 +36,15 @@ await loadPages();
 // === Configuration ===
 const CONFIG = {
   PAGE_LABELS: [
-    ["null", 58],
-    ["null", 58],
-    ["null", 58],
-    ["null", 58],
+    ["", 58],
+    ["", 58],
+    ["", 58],
+    ["", 58],
     ["projects", 58],
-    ["null", 58],
-    ["null", 58],
-    ["null", 58],
-    ["null", 58],
+    ["", 58],
+    ["", 58],
+    ["", 58],
+    ["", 58],
   ],
   BACKGROUND_COLOR: "white",
   CUBE_OUTLINE_COLOR: "black",
