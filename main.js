@@ -2,7 +2,6 @@ import * as THREE from "three";
 import { FontLoader } from "three/addons/loaders/FontLoader.js";
 import { setupScene } from "./util/setupScene.js";
 import { setupInteractions, setupBackButtons } from "./interactions.js";
-import { initPage5 } from "./pages/page5/page5.js";
 import {
   updateMatrixCubes,
   updateMatrixRotation,
@@ -33,7 +32,7 @@ async function loadPages() {
 }
 
 await loadPages();
-initPage5();
+// initPage5();
 
 // === Configuration ===
 const CONFIG = {
